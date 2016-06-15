@@ -134,7 +134,6 @@ So when using String methods, you should subtract 1 from positions conventionall
 
 The window\_search(window\_size, step\_size) method shows a typical Ruby way of writing concise and clear code using 'closures'. Each sliding window creates a subsequence which is supplied to the enclosed block through a variable named +s+.
 
-- 
 
 Show average percentage of GC content for 20 bases (stepping the default one base at a time):
 
@@ -147,7 +146,6 @@ Show average percentage of GC content for 20 bases (stepping the default one bas
 
 Since the class of each subsequence is the same as original sequence (Bio::Sequence::NA or Bio::Sequence::AA or Bio::Sequence), you can use all methods on the subsequence. For example,
 
-- 
 
 Shows translation results for 15 bases shifting a codon at a time
 
@@ -158,7 +156,6 @@ Shows translation results for 15 bases shifting a codon at a time
 
 Finally, the window\_search method returns the last leftover subsequence. This allows for example
 
-- 
 
 Divide a genome sequence into sections of 10000bp and output FASTA formatted sequences (line width 60 chars). The 1000bp at the start and end of each subsequence overlapped. At the 3' end of the sequence the leftover is also added:
 
@@ -176,8 +173,6 @@ If you don't want the overlapping window, set window size and stepping size to e
 
 Other examples
 
-- 
-
 Count the codon usage
 
     bioruby> codon_usage = Hash.new(0)
@@ -185,7 +180,6 @@ Count the codon usage
     bioruby> codon_usage
     ==> {"cat"=>1, "aaa"=>3, "cca"=>1, "att"=>2, "aga"=>1, "atc"=>1, "cta"=>1, "gca"=>1, "cga"=>1, "tca"=>3, "aag"=>1, "tcc"=>1, "atg"=>1}
 
-- 
 
 Calculate molecular weight for each 10-aa peptide (or 10-nt nucleic acid)
 
@@ -340,13 +334,9 @@ When the specified translation table is different from the default (universal), 
 
 The Bio::Sequence#splicing method takes not only DDBJ/EMBL/GenBank feature style location text but also Bio::Locations object. For more information about location format and Bio::Locations class, see bio/location.rb.
 
-- 
-
 Splice according to location string used in a GenBank entry
 
     naseq.splicing('join(2035..2050,complement(1775..1818),13..345')
-
-- 
 
 Generate Bio::Locations object and pass the splicing method
 
@@ -354,8 +344,6 @@ Generate Bio::Locations object and pass the splicing method
     naseq.splicing(locs)
 
 You can also use this splicing method for amino acid sequences (Bio::Sequence::AA objects).
-
-- 
 
 Splicing peptide from a protein (e.g. signal peptide)
 
@@ -682,7 +670,6 @@ See bio/appl/blast.rb and bio/appl/blast/\*.rb for more information.
 
 When you already have BLAST output files and you want to parse them, you can directly create Bio::Blast::Report objects without the Bio::Blast factory object. For this purpose use Bio::Blast.reports, which supports the "-m 0" default and "-m 7" XML type output format.
 
-- 
 
 For example:
 
@@ -700,7 +687,6 @@ For example:
     result
     # ==> ["BAB38768", "BAB38768", "BAB38769", "BAB37741"]
 
-- 
 
 another example:
 
@@ -927,32 +913,24 @@ The BioRuby project has a BioFetch server at bioruby.org. It uses GenomeNet's DB
 
 Here are some methods to retrieve entries from our BioFetch server.
 
-1. 
+1. Using a web browser
 
-Using a web browser
+        http://bioruby.org/cgi-bin/biofetch.rb
 
-    http://bioruby.org/cgi-bin/biofetch.rb
+2. Using the br\_biofetch.rb command
 
-2. 
+        % br_biofetch.rb db_name entry_id
 
-Using the br\_biofetch.rb command
+3. Directly using Bio::Fetch in a script
 
-    % br_biofetch.rb db_name entry_id
+        serv = Bio::Fetch.new(server_url)
+        entry = serv.fetch(db_name, entry_id)
 
-3. 
+4. Indirectly using Bio::Fetch via BioRegistry in a script
 
-Directly using Bio::Fetch in a script
-
-    serv = Bio::Fetch.new(server_url)
-    entry = serv.fetch(db_name, entry_id)
-
-4. 
-
-Indirectly using Bio::Fetch via BioRegistry in script
-
-    reg = Bio::Registry.new
-    serv = reg.get_database('genbank')
-    entry = serv.get_by_id('AA2CG')
+        reg = Bio::Registry.new
+        serv = reg.get_database('genbank')
+        entry = serv.get_by_id('AA2CG')
 
 If you want to use (4), you have to include some settings in seqdatabase.ini. For example:
 
