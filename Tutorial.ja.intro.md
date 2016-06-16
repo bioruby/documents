@@ -734,3 +734,668 @@ bioruby> p ct.stop
 bioruby> p ct.revtrans("V")
 ["gtc", "gtg", "gtt", "gta"]
 ```
+
+### フラットファイルのエントリ
+
+データベースのエントリと、フラットファイルそのものを扱う方法を紹介します。 GenBank データベースの中では、ファージのエントリが含まれる gbphg.seq のファイルサイズが小さいので、このファイルを例として使います。
+
+```sh
+% wget ftp://ftp.hgc.jp/pub/mirror/ncbi/genbank/gbphg.seq.gz
+% gunzip gbphg.seq.gz
+```
+
+<dl>
+<dt>getent(str)</dt></dl>
+
+getseq コマンドは配列を取得しましたが、配列だけでなくエントリ全体を取得するには getent コマンド(※2)を使います。getseq コマンド同様、getent コマンドでも OBDA, EMBOSS, NCBI, EBI, TogoWS のデータベースが利用可能です(※5)。設定については getseq コマンドの説明を参照してください。
+
+```
+bioruby> entry = getent("genbank:AB044425")
+bioruby> puts entry
+LOCUS       AB044425                1494 bp    DNA     linear   PLN 28-APR-2001
+DEFINITION  Volvox carteri f. kawasakiensis chloroplast psaB gene for
+            photosystem I P700 chlorophyll a apoprotein A2,
+            strain:NIES-732.
+(略)
+```
+
+getent コマンドの引数には db:entry_id 形式の文字列、EMBOSS の USA、ファイル、IO が与えられ、データベースの１エントリ分の文字列が返されます。配列データベースに限らず、数多くのデータベースエントリに対応しています。
+
+<dl>
+<dt>flatparse(str)</dt></dl>
+
+取得したエントリをパースして欲しいデータをとりだすには flatparse コマンドを使います。
+
+```
+bioruby> entry = getent("gbphg.seq")
+bioruby> gb = flatparse(entry)
+bioruby> puts gb.entry_id
+AB000833
+bioruby> puts gb.definition
+Bacteriophage Mu DNA for ORF1, sheath protein gpL, ORF2, ORF3, complete cds.
+bioruby> puts psaB.naseq
+acggtcagacgtttggcccgaccaccgggatgaggctgacgcaggtcagaaatctttgtgacgacaaccgtatcaat
+(略)
+```
+
+<dl>
+<dt>getobj(str)</dt></dl>
+
+getobj コマンド(※2)は、getent でエントリを文字列として取得し flatparse でパースしたオブジェクトに変換するのと同じです。getent コマンドと同じ引数を受け付けます。配列を取得する時は getseq、エントリを取得する時は getent、パースしたオブジェクトを取得する時は getobj を使うことになります。
+
+```
+bioruby> gb = getobj("gbphg.seq")
+bioruby> puts gb.entry_id
+AB000833
+```
+
+<dl>
+<dt>flatfile(file)</dt></dl>
+
+getent コマンドは１エントリしか扱えないため、ローカルのファイルを開いて各エントリ毎に処理を行うには flatfile コマンドを使います。
+
+```
+bioruby> flatfile("gbphg.seq") do |entry|
+bioruby+   # do something on entry
+bioruby+ end
+```
+
+ブロックを指定しない場合は、ファイル中の最初のエントリを取得します。
+
+```
+bioruby> entry = flatfile("gbphg.seq")
+bioruby> gb = flatparse(entry)
+bioruby> puts gb.entry_id
+```
+
+<dl>
+<dt>flatauto(file)</dt></dl>
+
+各エントリを flatparse と同様にパースした状態で順番に処理するためには、 flatfile コマンドの代わりに flatauto コマンドを使います。
+
+```
+bioruby> flatauto("gbphg.seq") do |entry|
+bioruby+   print entry.entry_id
+bioruby+   puts  entry.definition
+bioruby+ end
+```
+
+flatfile 同様、ブロックを指定しない場合は、ファイル中の最初のエントリを取得し、パースしたオブジェクトを返します。
+
+```
+bioruby> gb = flatfile("gbphg.seq")
+bioruby> puts gb.entry_id
+```
+
+### フラットファイルのインデクシング
+
+EMBOSS の dbiflat に似た機能として、BioRuby, BioPerl などに共通の BioFlat というインデックスを作成する仕組みがあります。一度インデックスを作成しておくとエントリの取り出しが高速かつ容易に行えます。これにより自分専用のデータベースを手軽に作ることができます。
+
+<dl>
+<dt>flatindex(db_name, *source_file_list)</dt></dl>
+
+GenBank のファージの配列ファイル gbphg.seq に入っているエントリに対して mydb というデータベース名でインデックスを作成します。
+
+```
+bioruby> flatindex("mydb", "gbphg.seq")
+Creating BioFlat index (.bioruby/bioflat/mydb) ... done
+```
+
+<dl>
+<dt>flatsearch(db_name, entry_id)</dt></dl>
+
+作成した mydb データベースからエントリをとり出すには flatsearch コマンドを使います。
+
+```
+bioruby> entry = flatsearch("mydb", "AB004561")
+bioruby> puts entry
+LOCUS       AB004561                2878 bp    DNA     linear   PHG 20-MAY-1998
+DEFINITION  Bacteriophage phiU gene for integrase, complete cds, integration
+            site.
+ACCESSION   AB004561
+(略)
+```
+
+### 様々な DB の配列を FASTA フォーマットに変換して保存
+
+FASTA フォーマットは配列データで標準的に用いられているフォーマットです。「&gt;」記号ではじまる１行目に配列の説明があり、２行目以降に配列がつづきます。配列中の空白文字は無視されます。
+
+```
+>entry_id definition ...
+ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT
+ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT
+```
+
+配列の説明行は、最初の単語が配列の ID になっていることが多いのですが、 NCBI の BLAST 用データベースではさらに高度な構造化がおこなわれています。
+
+* ftp://ftp.ncbi.nih.gov/blast/documents/README.formatdb
+* http://blast.wustl.edu/doc/FAQ-Indexing.html#Identifiers
+* FASTA format (Wikipedia)  http://en.wikipedia.org/wiki/Fasta_format
+
+BioRuby のデータベースエントリのクラスにはエントリID、配列、定義について共通のメソッドが用意されています。
+
+* entry_id - エントリ ID を取得
+* definition - 定義文を取得
+* seq - 配列を取得
+
+これらの共通メソッドを使うと、どんな配列データベースエントリでも FASTA フォーマットに変換できるプログラムが簡単に作れます。
+
+```ruby
+entry.seq.to_fasta("#{entry.entry_id} #{entry.definition}", 60)
+```
+
+さらに、BioRuby では入力データベースの形式を自動判別できますので、 GenBank, UniProt など多くの主要な配列データベースではファイル名を指定するだけで FASTA フォーマットに変換できます。
+
+<dl>
+<dt>flatfasta(fasta_file, *source_file_list)</dt></dl>
+
+入力データベースのファイル名のリストから、指定した FASTA フォーマットのファイルを生成するコマンドです。ここではいくつかの GenBank のファイルを FASTA フォーマットに変換し、myfasta.fa というファイルに保存しています。
+
+```
+bioruby> flatfasta("myfasta.fa", "gbphg.seq", "gbvrl1.seq", "gbvrl2.seq")
+Saving fasta file (myfasta.fa) ... 
+  converting -- gbphg.gbk
+  converting -- gbvrl1.gbk
+  converting -- gbvrl2.gbk
+done
+```
+
+### スクリプト生成
+
+作業手順をスクリプト化して保存しておくこともできます。
+
+```
+bioruby> script
+-- 8< -- 8< -- 8< --  Script  -- 8< -- 8< -- 8< --
+bioruby> seq = getseq("gbphg.seq")
+bioruby> p seq
+bioruby> p seq.translate
+bioruby> script
+-- >8 -- >8 -- >8 --  Script  -- >8 -- >8 -- >8 --
+Saving script (script.rb) ... done
+```
+
+生成された script.rb は以下のようになります。
+
+```
+#!/usr/bin/env bioruby
+
+seq = getseq("gbphg.seq")
+p seq
+p seq.translate
+```
+
+このスクリプトは bioruby コマンドで実行することができます。
+
+```sh
+% bioruby script.rb
+```
+
+### 簡易シェル機能
+
+<dl>
+<dt>cd(dir)</dt></dl>
+
+カレントディレクトリを変更します。
+
+```
+bioruby> cd "/tmp"
+"/tmp"
+```
+
+ホームディレクトリに戻るには引数をつけずに cd を実行します。
+
+```
+bioruby> cd
+"/home/k"
+```
+
+<dl>
+<dt>pwd</dt></dl>
+
+カレントディレクトリを表示します。
+
+```
+bioruby> pwd
+"/home/k"
+```
+
+<dl>
+<dt>dir</dt></dl>
+
+カレントディレクトリのファイルを一覧表示します。
+
+```
+bioruby> dir
+   UGO  Date                                 Byte  File
+------  ----------------------------  -----------  ------------
+ 40700  Tue Dec 06 07:07:35 JST 2005         1768  "Desktop"
+ 40755  Tue Nov 29 16:55:20 JST 2005         2176  "bin"
+100644  Sat Oct 15 03:01:00 JST 2005     42599518  "gbphg.seq"
+(略)
+
+bioruby> dir "gbphg.seq"
+   UGO  Date                                 Byte  File
+------  ----------------------------  -----------  ------------
+100644  Sat Oct 15 03:01:00 JST 2005     42599518  "gbphg.seq"
+```
+
+<dl>
+<dt>head(file, lines = 10)</dt></dl>
+
+テキストファイルやオブジェクトの先頭 10 行を表示します。
+
+```
+bioruby> head "gbphg.seq"
+GBPHG.SEQ            Genetic Sequence Data Bank
+                          October 15 2005
+
+                NCBI-GenBank Flat File Release 150.0
+
+                          Phage Sequences         
+
+    2713 loci,    16892737 bases, from     2713 reported sequences
+```
+
+表示する行数を指定することもできます。
+
+```
+bioruby> head "gbphg.seq", 2
+GBPHG.SEQ            Genetic Sequence Data Bank
+                          October 15 2005
+```
+
+テキストの入っている変数の先頭を見ることもできます。
+
+```
+bioruby> entry = getent("gbphg.seq")
+bioruby> head entry, 2
+GBPHG.SEQ            Genetic Sequence Data Bank
+                          October 15 2005
+```
+
+<dl>
+<dt>disp(obj)</dt></dl>
+
+テキストファイルやオブジェクトの中身をページャーで表示します。ここで使用するページャーは pager コマンドで変更することができます（後述）。
+
+```
+bioruby> disp "gbphg.seq"
+bioruby> disp entry
+bioruby> disp [1, 2, 3] * 4
+```
+
+### 変数
+
+<dl>
+<dt>ls</dt></dl>
+
+セッション中に作成した変数（オブジェクト）の一覧を表示します。
+
+```
+bioruby> ls
+["entry", "seq"]
+
+bioruby> a = 123
+["a", "entry", "seq"]
+```
+
+<dl>
+<dt>rm(symbol)</dt></dl>
+
+変数を消去します。
+
+```
+bioruby> rm "a"
+
+bioruby> ls
+["entry", "seq"]
+```
+
+<dl>
+<dt>savefile(filename, object)</dt></dl>
+
+変数に保存されている内容をテキストファイルに保存します。
+
+```
+bioruby> savefile "testfile.txt", entry
+Saving data (testfile.txt) ... done
+
+bioruby> disp "testfile.txt"
+```
+
+### 各種設定
+
+永続化の仕組みとして BioRuby シェル終了時に session ディレクトリ内にヒストリ、オブジェクト、個人の設定が保存され、次回起動時に自動的に読み込まれます。
+
+<dl>
+<dt>config</dt></dl>
+
+BioRuby シェルの各種設定を表示します。
+
+```
+bioruby> config
+message = "...BioRuby in the shell..."
+marshal = [4, 8]
+color   = false
+pager   = nil
+echo    = false
+```
+
+echo 表示するかどうかを切り替えます。on の場合は、puts や p などをつけなくても評価した値が画面に表示されます。 irb コマンドの場合は初期設定が on になっていますが、bioruby コマンドでは長い配列やエントリなど長大な文字列を扱うことが多いため、初期設定では off にしています。
+
+```
+bioruby> config :echo
+Echo on
+  ==> nil
+
+bioruby> config :echo
+Echo off
+```
+
+コドン表など、可能な場合にカラー表示するかどうかを切り替えます。カラー表示の場合、プロンプトにも色がつきますので判別できます。
+
+```
+bioruby> config :color
+bioruby> codontable
+(色付き)
+```
+
+実行するたびに設定が切り替わります。
+
+```
+bioruby> config :color
+bioruby> codontable
+(色なし)
+```
+
+BioRuby シェル起動時に表示されるスプラッシュメッセージを違う文字列に変更します。何の解析プロジェクト用のディレクトリかを指定しておくのもよいでしょう。
+
+```
+bioruby> config :message, "Kumamushi genome project"
+
+K u m a m u s h i   g e n o m e   p r o j e c t
+
+  Version : BioRuby 0.8.0 / Ruby 1.8.4
+```
+
+デフォルトの文字列に戻すには、引数なしで実行します。
+
+```
+bioruby> config :message
+```
+
+BioRuby シェル起動時に表示されるスプラッシュメッセ−ジをアニメーション表示するかどうかを切り替えます。こちらも実行するたびに設定が切り替わります。
+
+```
+bioruby> config :splash
+Splash on
+```
+
+<dl>
+<dt>pager(command)</dt></dl>
+
+disp コマンドで実際に利用するページャーを切り替えます。
+
+```
+bioruby> pager "lv"
+Pager is set to 'lv'
+
+bioruby> pager "less -S"
+Pager is set to 'less -S'
+```
+
+ページャーを使用しない設定にする場合は引数なしで実行します。
+
+```
+bioruby> pager
+Pager is set to 'off'
+```
+
+ページャーが off の時に引数なしで実行すると環境変数 PAGER の値を利用します。
+
+```
+bioruby> pager
+Pager is set to 'less'
+```
+
+### 遺伝子アスキーアート
+
+<dl>
+<dt>doublehelix(sequence)</dt></dl>
+
+DNA 配列をアスキーアートで表示するオマケ機能があります。適当な塩基配列 seq を二重螺旋っぽく表示してみましょう。
+
+```
+bioruby> dna = getseq("atgc" * 10).randomize
+bioruby> doublehelix dna
+     ta
+    t--a
+   a---t
+  a----t
+ a----t
+t---a
+g--c
+ cg
+ gc
+a--t
+g---c
+ c----g
+  c----g
+(略)
+```
+
+### 遺伝子音楽
+
+<dl>
+<dt>midifile(midifile, sequence)</dt></dl>
+
+DNA 配列を MIDI ファイルに変換するオマケ機能があります。適当な塩基配列 seq を使って生成した midifile.mid を MIDI プレイヤーで演奏してみましょう。
+
+```
+bioruby> midifile("midifile.mid", seq)
+Saving MIDI file (midifile.mid) ... done
+```
+
+以上で BioRuby シェルの解説を終わり、以下では BioRuby ライブラリ自体の解説を行います。
+
+## 塩基・アミノ酸配列を処理する (Bio::Sequence クラス)
+
+Bio::Sequence クラスは、配列に対する様々な操作を行うことができます。簡単な例として、短い塩基配列 atgcatgcaaaa を使って、相補配列への変換、部分配列の切り出し、塩基組成の計算、アミノ酸への翻訳、分子量計算などを行なってみます。アミノ酸への翻訳では、必要に応じて何塩基目から翻訳を開始するかフレームを指定したり、codontable.rb で定義されているコドンテーブルの中から使用するものを指定したりする事ができます（コドンテーブルの番号は http://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgiを参照）。
+
+```ruby
+#!/usr/bin/env ruby
+
+require 'bio'
+
+seq = Bio::Sequence::NA.new("atgcatgcaaaa")
+
+puts seq                            # 元の配列
+puts seq.complement                 # 相補配列 (Bio::Sequence::NA)
+puts seq.subseq(3,8)                # 3 塩基目から 8 塩基目まで
+
+p seq.gc_percent                    # GC 塩基の割合 (Integer)
+p seq.composition                   # 全塩基組成 (Hash)
+
+puts seq.translate                  # 翻訳配列 (Bio::Sequence::AA)
+puts seq.translate(2)               # ２文字目から翻訳（普通は１から）
+puts seq.translate(1,9)             # ９番のコドンテーブルを使用
+
+p seq.translate.codes               # アミノ酸を３文字コードで表示 (Array)
+p seq.translate.names               # アミノ酸を名前で表示 (Array)
+p seq.translate.composition         # アミノ酸組成 (Hash)
+p seq.translate.molecular_weight    # 分子量を計算 (Float)
+
+puts seq.complement.translate       # 相補配列の翻訳
+```
+
+print, puts, p は内容を画面に表示するための Ruby 標準メソッドです。基本となる print と比べて、puts は改行を自動でつけてくれる、 p は文字列や数字以外のオブジェクトも人間が見やすいように表示してくれる、という特徴がありますので適宜使い分けます。さらに、
+
+```ruby
+require 'pp'
+```
+
+とすれば使えるようになる pp メソッドは、p よりも表示が見やすくなります。
+
+塩基配列は Bio::Sequence::NA クラスの、アミノ酸配列は Bio::Sequence::AA クラスのオブジェクトになります。それぞれ Bio::Sequence クラスを継承しているため、多くのメソッドは共通です。
+
+さらに Bio::Sequence::NA, AA クラスは Ruby の String クラスを継承しているので String クラスが持つメソッドも使う事ができます。例えば部分配列を切り出すには Bio::Sequence クラスの subseq(from,to) メソッドの他に、String クラスの [] メソッドを使うこともできます。
+
+Ruby の文字列は 1 文字目を 0 番目として数える点には注意が必要です。たとえば、
+
+```ruby
+puts seq.subseq(1, 3)
+puts seq[0, 3]
+```
+
+はどちらも seq の最初の３文字 atg を表示します。
+
+このように、String のメソッドを使う場合は、生物学で普通使用される 1 文字目を 1 番目として数えた数字からは 1 を引く必要があります（subseq メソッドはこれを内部でやっています。また、from, to のどちらかでも 0 以下の場合は例外が発生するようになっています）。
+
+ここまでの処理を BioRuby シェルで試すと以下のようになります。
+
+```ruby
+# 次の行は seq = seq("atgcatgcaaaa") でもよい
+bioruby> seq = Bio::Sequence::NA.new("atgcatgcaaaa")
+# 生成した配列を表示
+bioruby> puts seq
+atgcatgcaaaa
+# 相補配列を表示
+bioruby> puts seq.complement
+ttttgcatgcat
+# 部分配列を表示（３塩基目から８塩基目まで）
+bioruby> puts seq.subseq(3,8)
+gcatgc
+# 配列の GC% を表示
+bioruby> p seq.gc_percent
+33
+# 配列の組成を表示
+bioruby> p seq.composition
+{"a"=>6, "c"=>2, "g"=>2, "t"=>2}
+# アミノ酸配列への翻訳
+bioruby> puts seq.translate
+MHAK
+# ２塩基を開始塩基として翻訳
+bioruby> puts seq.translate(2)
+CMQ
+# ９番のコドンテーブルを使用して翻訳
+bioruby> puts seq.translate(1,9)
+MHAN
+# 翻訳されたアミノ酸配列を３文字コードで表示
+bioruby> p seq.translate.codes
+["Met", "His", "Ala", "Lys"]
+# 翻訳されたアミノ酸配列をアミノ酸の名前で表示
+bioruby> p seq.translate.names
+["methionine", "histidine", "alanine", "lysine"]
+# 翻訳されたアミノ酸配列の組成を表示
+bioruby> p seq.translate.composition
+{"K"=>1, "A"=>1, "M"=>1, "H"=>1}
+# 翻訳されたアミノ酸配列の分子量を表示
+bioruby> p seq.translate.molecular_weight
+485.605
+# 相補配列を翻訳
+bioruby> puts seq.complement.translate
+FCMH
+# 部分配列（１塩基目から３塩基目まで）
+bioruby> puts seq.subseq(1, 3)
+atg
+# 部分配列（１塩基目から３塩基目まで）
+bioruby> puts seq[0, 3]
+atg
+```
+
+window_search(window_size, step_size) メソッドを使うと、配列に対してウィンドウをずらしながらそれぞれの部分配列に対する処理を行うことができます。 Ruby の特長のひとつである「ブロック」によって、「それぞれに対する処理」を簡潔かつ明瞭に書くことが可能です。以下の例では、subseq という変数にそれぞれ部分配列を代入しながらブロックを繰り返し実行することになります。
+
+* 100 塩基ごとに（1塩基ずつずらしながら）平均 GC% を計算して表示する
+
+    ```ruby
+    seq.window_search(100) do |subseq|
+      puts subseq.gc_percent
+    end
+    ```
+
+ブロックの中で受け取る部分配列も、元と同じ Bio::Sequence::NA または Bio::Sequence::AA クラスのオブジェクトなので、配列クラスの持つ全てのメソッドを実行することができます。
+
+また、２番目の引数に移動幅を指定することが出来るようになっているので、
+
+* コドン単位でずらしながら 15 塩基を 5 残基のペプチドに翻訳して表示する
+
+    ```ruby
+    seq.window_search(15, 3) do |subseq|
+      puts subseq.translate
+    end
+    ```
+
+といったことができます。さらに移動幅に満たない右端の部分配列をメソッド自体の返り値として戻すようになっているので、
+
+* ゲノム配列を 10000bp ごとにブツ切りにして FASTA フォーマットに整形、このとき末端 1000bp はオーバーラップさせ、10000bp に満たない 3' 端は別途受け取って表示する
+
+    ```ruby
+    i = 1
+    remainder = seq.window_search(10000, 9000) do |subseq|
+      puts subseq.to_fasta("segment #{i}", 60)
+      i += 1
+    end
+    puts remainder.to_fasta("segment #{i}", 60)
+    ```
+
+のような事もわりと簡単にできます。
+
+ウィンドウの幅と移動幅を同じにするとオーバーラップしないウィンドウサーチができるので、
+
+* コドン頻度を数える
+
+    ```ruby
+    codon_usage = Hash.new(0)
+    seq.window_search(3, 3) do |subseq|
+      codon_usage[subseq] += 1
+    end
+    ```
+
+* 10 残基ずつ分子量を計算
+
+    ```ruby
+    seq.window_search(10, 10) do |subseq|
+      puts subseq.molecular_weight
+    end
+    ```
+
+といった応用も考えられます。
+
+実際には Bio::Sequence::NA オブジェクトはファイルから読み込んだ文字列から生成したり、データベースから取得したものを使ったりします。たとえば、
+
+```ruby
+#!/usr/bin/env ruby
+
+require 'bio'
+
+input_seq = ARGF.read       # 引数で与えられたファイルの全行を読み込む
+
+my_naseq = Bio::Sequence::NA.new(input_seq)
+my_aaseq = my_naseq.translate
+
+puts my_aaseq
+```
+
+このプログラムを na2aa.rb として、以下の塩基配列
+
+```
+gtggcgatctttccgaaagcgatgactggagcgaagaaccaaagcagtgacatttgtctg
+atgccgcacgtaggcctgataagacgcggacagcgtcgcatcaggcatcttgtgcaaatg
+tcggatgcggcgtga
+```
+
+を書いたファイル my_naseq.txt を読み込んで翻訳すると
+
+```sh
+% ./na2aa.rb my_naseq.txt
+VAIFPKAMTGAKNQSSDICLMPHVGLIRRGQRRIRHLVQMSDAA*
+```
+
+のようになります。ちなみに、このくらいの例なら短くすると１行で書けます。
+
+```sh
+% ruby -r bio -e 'p Bio::Sequence::NA.new($<.read).translate' my_naseq.txt
+```
+
+しかし、いちいちファイルを作るのも面倒なので、次はデータベースから必要な情報を取得してみます。
