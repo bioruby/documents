@@ -1,0 +1,13 @@
+# BioRuby Tutorial
+
+## Trying Bioruby
+
+Let's try the following:
+
+
+~~~ruby
+require 'bio'
+seq = Bio::Sequence::NA.new("atgcatgcaaaa")
+seq.complement
+
+~~~
