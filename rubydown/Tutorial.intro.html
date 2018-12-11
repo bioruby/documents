@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/2.10.0/github-markdown.min.css' rel='stylesheet' type='text/css' />
+    <style>
+      article.markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+      }
+
+      span.line-numbers {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <article class='markdown-body'>
+      <h1 id="bioruby-tutorial">BioRuby Tutorial</h1>
+
+<h2 id="trying-bioruby">Trying Bioruby</h2>
+
+<p>Let’s try the following:</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>require <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">bio</span><span style="color:#710">'</span></span>
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>seq = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.new(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">atgcatgcaaaa</span><span style="color:#710">&quot;</span></span>)
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span>seq.complement
+<span class="line-numbers"><a href="#n4" name="n4">4</a></span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ttttgcatgcat
+</code></pre>
+</p>
+
+    </article>
+  </body>
+</html>
