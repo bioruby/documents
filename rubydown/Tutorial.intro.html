@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -29,14 +28,312 @@
 <div class="language-ruby highlighter-coderay"><div class="CodeRay">
   <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>require <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">bio</span><span style="color:#710">'</span></span>
 <span class="line-numbers"><a href="#n2" name="n2">2</a></span>seq = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.new(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">atgcatgcaaaa</span><span style="color:#710">&quot;</span></span>)
-<span class="line-numbers"><a href="#n3" name="n3">3</a></span>seq.complement
-<span class="line-numbers"><a href="#n4" name="n4">4</a></span>
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; atgcatgcaaaa
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.complement
 </pre></div>
 </div>
 </div>
 <p>  <pre><code>=&gt; ttttgcatgcat
 </code></pre>
 </p>
+
+<h2 id="working-with-nucleic--amino-acid-sequences-biosequence-class">Working with nucleic / amino acid sequences (Bio::Sequence class)</h2>
+
+<p>The Bio::Sequence class allows the usual sequence transformations and translations. In the example below the DNA sequence “atgcatgcaaaa” is converted into the complemental strand and spliced into a subsequence; next, the nucleic acid composition is calculated and the sequence is translated into the amino acid sequence, the molecular weight calculated, and so on. When translating into amino acid sequences, the frame can be specified and optionally the codon table selected (as defined in codontable.rb).</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.new(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">atgcatgcaaaa</span><span style="color:#710">&quot;</span></span>)
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; atgcatgcaaaa
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span><span style="color:#777"># complemental sequence (Bio::Sequence::NA object)</span>
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>seq.complement
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ttttgcatgcat
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.subseq(<span style="color:#00D">3</span>,<span style="color:#00D">8</span>) <span style="color:#777"># gets subsequence of positions 3 to 8 (starting from 1)</span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; gcatgc
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.gc_percent
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; 33
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.composition
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; {"a"=&gt;6, "t"=&gt;2, "g"=&gt;2, "c"=&gt;2}
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; MHAK
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate(<span style="color:#00D">2</span>)
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; CMQ
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate(<span style="color:#00D">1</span>,<span style="color:#00D">11</span>)
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; MHAK
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate.codes
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ["Met", "His", "Ala", "Lys"]
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate.names
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ["methionine", "histidine", "alanine", "lysine"]
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate.composition
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; {"M"=&gt;1, "H"=&gt;1, "A"=&gt;1, "K"=&gt;1}
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.translate.molecular_weight
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; 485.6050000000001
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seq.complement.translate
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; FCMH
+</code></pre>
+</p>
+
+<p>get a random sequence with the same NA count:</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>counts = {<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">a</span><span style="color:#710">'</span></span>=&gt;seq.count(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">a</span><span style="color:#710">'</span></span>),<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">c</span><span style="color:#710">'</span></span>=&gt;seq.count(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">c</span><span style="color:#710">'</span></span>),<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">g</span><span style="color:#710">'</span></span>=&gt;seq.count(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">g</span><span style="color:#710">'</span></span>),<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">t</span><span style="color:#710">'</span></span>=&gt;seq.count(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">t</span><span style="color:#710">'</span></span>)}
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; {"a"=&gt;6, "c"=&gt;2, "g"=&gt;2, "t"=&gt;2}
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>randomseq = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.randomize(counts)
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; agcacaaaagtt
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>print counts
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>{"a"=&gt;6, "c"=&gt;2, "g"=&gt;2, "t"=&gt;2}
+=&gt; 
+</code></pre>
+</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>p counts
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>{"a"=&gt;6, "c"=&gt;2, "g"=&gt;2, "t"=&gt;2}
+
+=&gt; {"a"=&gt;6, "c"=&gt;2, "g"=&gt;2, "t"=&gt;2}
+</code></pre>
+</p>
+
+<p>The p, print and puts methods are standard Ruby ways of outputting to the screen. If you want to know more about standard Ruby commands you can use the ‘ri’ command on the command line (or the help command in Windows). For example</p>
+
+<pre><code>% ri puts
+% ri p
+% ri File.open
+</code></pre>
+
+<p>Nucleic acid sequence are members of the Bio::Sequence::NA class, and amino acid sequence are members of the Bio::Sequence::AA class. Shared methods are in the parent Bio::Sequence class.</p>
+
+<p>As Bio::Sequence inherits Ruby’s String class, you can use String class methods. For example, to get a subsequence, you can not only use subseq(from, to) but also String#[].</p>
+
+<p>Please take note that the Ruby’s string’s are base 0 - i.e. the first letter has index 0, for example:</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>s = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">abc</span><span style="color:#710">'</span></span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; abc
+</code></pre>
+</p>
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>s[<span style="color:#00D">0</span>].chr
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; a
+</code></pre>
+</p>
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>s[<span style="color:#00D">0</span>..<span style="color:#00D">1</span>]
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ab
+</code></pre>
+</p>
+
+<p>So when using String methods, you should subtract 1 from positions conventionally used in biology. (subseq method will throw an exception if you specify positions smaller than or equal to 0 for either one of the “from” or “to”.)</p>
+
+<p>The window_search(window_size, step_size) method shows a typical Ruby way of writing concise and clear code using ‘closures’. Each sliding window creates a subsequence which is supplied to the enclosed block through a variable named +s+.</p>
+
+<ul>
+  <li>Show average percentage of GC content for 20 bases (stepping the default one base at a time):</li>
+</ul>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>seq = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.new(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">atgcatgcaattaagctaatcccaattagatcatcccgatcatcaaaaaaaaaa</span><span style="color:#710">&quot;</span></span>)
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span>a=[]; seq.window_search(<span style="color:#00D">20</span>) { |s| a.push s.gc_percent }
+<span class="line-numbers"><a href="#n4" name="n4">4</a></span>a
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; [30, 35, 40, 40, 35, 35, 35, 30, 25, 30, 30, 30, 35, 35, 35, 35, 35, 40, 45, 45, 45, 45, 40, 35, 40, 40, 40, 40, 40, 35, 35, 35, 30, 30, 30]
+</code></pre>
+</p>
+
+<p>Since the class of each subsequence is the same as original sequence (Bio::Sequence::NA or Bio::Sequence::AA or Bio::Sequence), you can use all methods on the subsequence. For example,</p>
+
+<ul>
+  <li>Shows translation results for 15 bases shifting a codon at a time</li>
+</ul>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>a=[]; seq.window_search(<span style="color:#00D">15</span>, <span style="color:#00D">3</span>) { |s| a.push s.translate }
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>a
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; ["MHAIK", "HAIKL", "AIKLI", "IKLIP", "KLIPI", "LIPIR", "IPIRS", "PIRSS", "IRSSR", "RSSRS", "SSRSS", "SRSSK", "RSSKK", "SSKKK"]
+</code></pre>
+</p>
+
+<p>Finally, the window_search method returns the last leftover subsequence. This allows for example</p>
+
+<ul>
+  <li>Divide a genome sequence into sections of 10000bp and output FASTA formatted sequences (line width 60 chars). The 1000bp at the start and end of each subsequence overlapped. At the 3’ end of the sequence the leftover is also added:</li>
+</ul>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"> <a href="#n1" name="n1">1</a></span>i = <span style="color:#00D">1</span>
+<span class="line-numbers"> <a href="#n2" name="n2">2</a></span>textwidth=<span style="color:#00D">60</span>
+<span class="line-numbers"> <a href="#n3" name="n3">3</a></span>remainder = seq.window_search(<span style="color:#00D">10000</span>, <span style="color:#00D">9000</span>) <span style="color:#080;font-weight:bold">do</span> |s|
+<span class="line-numbers"> <a href="#n4" name="n4">4</a></span>  puts s.to_fasta(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">segment </span><span style="background-color:hsla(0,0%,0%,0.07);color:black"><span style="font-weight:bold;color:#666">#{</span>i<span style="font-weight:bold;color:#666">}</span></span><span style="color:#710">&quot;</span></span>, textwidth)
+<span class="line-numbers"> <a href="#n5" name="n5">5</a></span>  i += <span style="color:#00D">1</span>
+<span class="line-numbers"> <a href="#n6" name="n6">6</a></span><span style="color:#080;font-weight:bold">end</span>
+<span class="line-numbers"> <a href="#n7" name="n7">7</a></span><span style="color:#080;font-weight:bold">if</span> remainder
+<span class="line-numbers"> <a href="#n8" name="n8">8</a></span>  puts remainder.to_fasta(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">segment </span><span style="background-color:hsla(0,0%,0%,0.07);color:black"><span style="font-weight:bold;color:#666">#{</span>i<span style="font-weight:bold;color:#666">}</span></span><span style="color:#710">&quot;</span></span>, textwidth)
+<span class="line-numbers"> <a href="#n9" name="n9">9</a></span><span style="color:#080;font-weight:bold">end</span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; 
+</code></pre>
+</p>
+
+<p>If you don’t want the overlapping window, set window size and stepping size to equal values.</p>
+
+<p>Other examples
+- Count the codon usage</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>codon_usage = <span style="color:#036;font-weight:bold">Hash</span>.new(<span style="color:#00D">0</span>)
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>seq.window_search(<span style="color:#00D">3</span>, <span style="color:#00D">3</span>) { |s| codon_usage[s] += <span style="color:#00D">1</span> }
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span>codon_usage
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; {"atg"=&gt;1, "cat"=&gt;1, "gca"=&gt;1, "att"=&gt;2, "aag"=&gt;1, "cta"=&gt;1, "atc"=&gt;1, "cca"=&gt;1, "aga"=&gt;1, "tca"=&gt;3, "tcc"=&gt;1, "cga"=&gt;1, "aaa"=&gt;3}
+</code></pre>
+</p>
+
+<ul>
+  <li>Calculate molecular weight for each 10-aa peptide (or 10-nt nucleic acid)</li>
+</ul>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>a=[]; seq.window_search(<span style="color:#00D">10</span>, <span style="color:#00D">10</span>) { |s| a.push s.molecular_weight }
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; aaaa
+</code></pre>
+</p>
+
 
     </article>
   </body>
