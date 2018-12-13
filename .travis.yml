@@ -3,4 +3,5 @@ language: ruby
 install: gem install rake
 
 script:
-  - cd rubydown && ls && rake build && rake install
+  - cd ~ && ls
+  - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && rake build && rake install
