@@ -3,5 +3,8 @@ language: ruby
 install: gem install rake
 
 script:
+  - pwd
   - cd ~ && ls
   - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && rake build && rake install
+  - ls /usr/local/bundle/bin/rubydown
+  
