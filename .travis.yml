@@ -5,8 +5,13 @@ install:
   - gem install bio -v 1.6.0.pre.20181210
 
 script:
-  - pwd && mkdir deploy
+  - pwd && mkdir static
   - cd ~ && ls
   - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && rake build && rake install
-  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -e ~/rubydown/exe/template.html.erb -o ~/build/bioruby/documents/deploy/index.html
-  - ls -lh ~/build/bioruby/documents/deploy
+  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -e ~/rubydown/exe/template.html.erb -o ~/build/bioruby/documents/static/index.html
+  - cd ~/build/bioruby/documents/ && ls -lh ./static
+  
+deploy:
+  provider: surge
+  project: ./static/
+  domain: bioruby.surge.sh  
