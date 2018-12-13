@@ -7,7 +7,7 @@ rvm:
 script:
   - git clone git://github.com/sciruby-jp/rubydown
   - cd rubydown
-  - rake build
-  - rake install
+  - sudo rake build
+  - sudo rake install
   - cd ..
   - ls
