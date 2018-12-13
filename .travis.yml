@@ -1,6 +1,8 @@
 language: ruby
 
-install: gem install rake
+install:
+  - gem install rake
+  - gem install bio -v 1.6.0.pre.20181210
 
 script:
   - pwd && mkdir deploy
