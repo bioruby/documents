@@ -3,7 +3,8 @@ language: ruby
 install: gem install rake
 
 script:
-  - pwd
+  - pwd && mkdir deploy
   - cd ~ && ls
   - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && rake build && rake install
-  - rubydown --version  
+  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -e ~/rubydown/exe/template.html.erb -o ~/build/bioruby/documents/deploy/index.html
+  - ls -lh ~/build/bioruby/documents/deploy
