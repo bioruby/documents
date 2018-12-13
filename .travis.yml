@@ -7,7 +7,4 @@ rvm:
 install: gem install rake
 
 script:
-  - git clone git://github.com/sciruby-jp/rubydown
-  - cd rubydown
-  - rake build
-  - rake install
+  - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && ls && rake build && rake install
