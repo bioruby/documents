@@ -13,5 +13,6 @@ script:
   
 deploy:
   provider: surge
+  skip_cleanup: true
   project: ./static/
   domain: bioruby.surge.sh  
