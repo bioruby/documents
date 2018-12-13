@@ -1,3 +1,6 @@
+#### Automated and Reproducible http://bioruby.surge.sh/ update with Travis
+[![Build Status](https://travis-ci.org/bioruby/documents.svg?branch=master)](https://travis-ci.org/bioruby/documents)
+
 # rubydown installation
 ```
 git clone git://github.com/sciruby-jp/rubydown
