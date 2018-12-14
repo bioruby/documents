@@ -162,7 +162,8 @@ end
 If you don't want the overlapping window, set window size and stepping size to equal values.
 
 Other examples
-- Count the codon usage
+
+* Count the codon usage
 
 ~~~ruby
 codon_usage = Hash.new(0)
@@ -170,9 +171,57 @@ seq.window_search(3, 3) { |s| codon_usage[s] += 1 }
 codon_usage
 ~~~
 
-- Calculate molecular weight for each 10-aa peptide (or 10-nt nucleic acid)
+* Calculate molecular weight for each 10-aa peptide (or 10-nt nucleic acid)
 
 ~~~ruby
 a=[]; seq.window_search(10, 10) { |s| a.push s.molecular_weight }
 ~~~
+
+
+In most cases, sequences are read from files or retrieved from databases. For example:
+
+```ruby
+require 'bio'
+
+input_seq = ARGF.read       # reads all files in arguments
+
+my_naseq = Bio::Sequence::NA.new(input_seq)
+my_aaseq = my_naseq.translate
+
+puts my_aaseq
+```
+
+Save the program above as na2aa.rb. Prepare a nucleic acid sequence described below and save it as my_naseq.txt:
+
+```
+gtggcgatctttccgaaagcgatgactggagcgaagaaccaaagcagtgacatttgtctg
+atgccgcacgtaggcctgataagacgcggacagcgtcgcatcaggcatcttgtgcaaatg
+tcggatgcggcgtga
+```
+
+na2aa.rb translates a nucleic acid sequence to a protein sequence. For example, translates my_naseq.txt:
+
+```sh
+% ruby na2aa.rb my_naseq.txt
+```
+
+or use a pipe!
+
+```sh
+% cat my_naseq.txt|ruby na2aa.rb
+```
+
+Outputs
+
+```
+VAIFPKAMTGAKNQSSDICLMPHVGLIRRGQRRIRHLVQMSDAA*
+```
+
+You can also write this, a bit fancifully, as a one-liner script.
+
+```sh
+% ruby -r bio -e 'p Bio::Sequence::NA.new($<.read).translate' my_naseq.txt
+```
+
+In the next section we will retrieve data from databases instead of using raw sequence files. One generic example of the above can be found in ./sample/na2aa.rb.
 
