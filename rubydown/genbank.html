@@ -1,0 +1,447 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/2.10.0/github-markdown.min.css' rel='stylesheet' type='text/css' />
+    <style>
+      article.markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+      }
+
+      span.line-numbers {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <article class='markdown-body'>
+      <h2 id="parsing-genbank-data-biogenbank-class">Parsing GenBank data (Bio::GenBank class)</h2>
+
+<p>We assume that you already have some GenBank data files. (If you don’t, download some .seq files from ftp://ftp.ncbi.nih.gov/genbank/)</p>
+
+<p>As an example we will fetch the ID, definition and sequence of each entry from the GenBank format and convert it to FASTA. This is also an example script in the BioRuby distribution.</p>
+
+<p>A first attempt could be to use the Bio::GenBank class for reading in the data:</p>
+
+<pre><code>require 'bio'
+
+# Read all lines from STDIN split by the GenBank delimiter
+while entry = gets(Bio::GenBank::DELIMITER)
+  gb = Bio::GenBank.new(entry)      # creates GenBank object
+
+  print "&gt;#{gb.accession} "         # Accession
+  puts gb.definition                # Definition
+  puts gb.naseq                     # Nucleic acid sequence 
+                                    # (Bio::Sequence::NA object)
+end
+</code></pre>
+
+<p>But that has the disadvantage the code is tied to GenBank input. A more generic method is to use Bio::FlatFile which allows you to use different input formats:</p>
+
+<pre><code>require 'bio'
+
+ff = Bio::FlatFile.new(Bio::GenBank, ARGF)
+ff.each_entry do |gb|
+  definition = "#{gb.accession} #{gb.definition}"
+  puts gb.naseq.to_fasta(definition, 60)
+end
+</code></pre>
+
+<p>For example, in turn, reading FASTA format files:</p>
+
+<pre><code>require 'bio'
+
+ff = Bio::FlatFile.new(Bio::FastaFormat, ARGF)
+ff.each_entry do |f|
+  puts "definition : " + f.definition
+  puts "nalen      : " + f.nalen.to_s
+  puts "naseq      : " + f.naseq
+end
+</code></pre>
+
+<p>In the above two scripts, the first arguments of Bio::FlatFile.new are database classes of BioRuby. This is expanded on in a later section.</p>
+
+<p>Again another option is to use the Bio::DB.open class:</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>require <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">bio</span><span style="color:#710">'</span></span>
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span><span style="color:#777">#system &quot;wget ftp://ftp.ncbi.nlm.nih.gov/genbank/gbvrl1.seq.gz&quot;</span>
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span><span style="color:#777">#system &quot;gunzip gbvrl1.seq.gz&quot;</span>
+<span class="line-numbers"><a href="#n4" name="n4">4</a></span>ff = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">GenBank</span>.open(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">gbvrl1.seq</span><span style="color:#710">&quot;</span></span>)
+<span class="line-numbers"><a href="#n5" name="n5">5</a></span>ff.entries[<span style="color:#00D">0</span>..<span style="color:#00D">2</span>].each <span style="color:#080;font-weight:bold">do</span> |gb|
+<span class="line-numbers"><a href="#n6" name="n6">6</a></span>  definition = <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="background-color:hsla(0,0%,0%,0.07);color:black"><span style="font-weight:bold;color:#666">#{</span>gb.accession<span style="font-weight:bold;color:#666">}</span></span><span style="color:#D20"> </span><span style="background-color:hsla(0,0%,0%,0.07);color:black"><span style="font-weight:bold;color:#666">#{</span>gb.definition<span style="font-weight:bold;color:#666">}</span></span><span style="color:#710">&quot;</span></span>
+<span class="line-numbers"><a href="#n7" name="n7">7</a></span>  puts gb.naseq.to_fasta(definition, <span style="color:#00D">60</span>)
+<span class="line-numbers"><a href="#n8" name="n8">8</a></span><span style="color:#080;font-weight:bold">end</span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>&gt;AB000048 Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 483.
+atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacat
+gcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaag
+gatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaatt
+agaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaa
+gttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctt
+tttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacat
+gaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaa
+caagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtg
+actctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaa
+gatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgtt
+aaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtc
+cacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaacttt
+atgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaa
+accgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaa
+aaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacct
+gaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggt
+gaaaatctcttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaaca
+gcatttgaattaatacttgaaaaagcagataataccaaactaactaactttgatcttgca
+aattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcac
+gctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatgga
+ccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgtt
+ggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaattta
+atttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgt
+tctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaact
+ccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaaga
+cctgaacatacacaaccaataagagacagaatgttgaacattaaattagtatgtaagctt
+ccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagtt
+aaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagag
+tgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaa
+gacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctg
+actccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgca
+gaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagt
+ccgacatggtccgaaatagaggcagacctgagagccatttttacttctgaacaattggaa
+gaagattttcgagacgacttggattaa
+&gt;AB000049 Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 94-1.
+atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacat
+gcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaag
+gatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaatt
+agaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaa
+gttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctt
+tttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacat
+gaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaa
+caagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtg
+actctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaa
+gatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgtt
+aaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtc
+cacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaacttt
+atgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaa
+accgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaa
+aaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacct
+gaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggt
+gaaaatcttttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaaca
+gcatttgaattaatacttgaaaaagcagataatactaaactaactaactttgatcttgca
+aattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcac
+gctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatgga
+ccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgtt
+ggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaattta
+atttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgt
+tctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaact
+ccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaaga
+cctgaacatacacaaccaataagagacagaatgttgaacattaagttagtatgtaagctt
+ccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagtt
+aaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagag
+tgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaa
+gacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctg
+actccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgca
+gaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagt
+ccgacatggtccgaaatagaggcagacctaagagccatttttacttctgaacaattggaa
+gaagattttcgagacgacttggattaa
+&gt;AB000050 Feline panleukopenia virus gene for capsid protein 2, complete cds, isolate: 94-1.
+atgagtgatggagcagttcaaccagacggtggtcaacctgctgtcagaaatgaaagagct
+acaggatctgggaacgggtctggaggcgggggtggtggtggttctgggggtgtggggatt
+tctacgggtactttcaataatcagacggaatttaaatttttggaaaacgggtgggtggaa
+atcacagcaaactcaagcagacttgtacatttaaatatgccagaaagtgaaaattataaa
+agagtagttgtaaataatatggataaaactgcagttaaaggaaatatggctttagatgat
+actcatgtacaaattgtaacaccttggtcattggttgatgcaaatgcttggggagtttgg
+tttaatccaggagattggcaactaattgttaatactatgagtgagttgcatttagttagt
+tttgaacaagaaatttttaatgttgttttaaagactgtttcagaatctgctactcagcca
+ccaactaaagtttataataatgatttaactgcatcattgatggttgcattagatagtaat
+aatactatgccatttactccagcagctatgagatctgagacattgggtttttatccatgg
+aaaccaaccataccaactccatggagatattattttcaatgggatagaacattaatacca
+tctcatactggaactagtggcacaccaacaaatgtatatcatggtacagatccagatgat
+gttcaattttatactattgaaaattctgtgccagtacacttactaagaacaggtgatgaa
+tttgctacaggaacatttttttttgattgtaaaccatgtagactaacacatacatggcaa
+acaaatagagcattgggcttaccaccatttttaaattctttgcctcaatctgaaggagct
+actaactttggtgatataggagttcaacaagataaaagacgtggtgtaactcaaatggga
+aatacagactatattactgaagctactattatgagaccagctgaggttggttatagtgca
+ccatactattcttttgaagcgtctacacaagggccatttaaaacacctattgcagcagga
+cgggggggagcgcaaacagatgaaaatcaagcagcagatggtgatccaagatatgcattt
+ggtagacaacatggtcaaaaaactactacaacaggagaaacacctgagagatttacatat
+atagcacatcaagatacaggaagatatccagaaggagattggattcaaaatattaacttt
+aaccttcctgtaacaaatgataatgtattgctaccaacagatccaattggaggtaaaaca
+ggaattaactatactaatatatttaatacttatggtcctttaactgcattaaataatgta
+ccaccagtttatccaaatggtcaaatttgggataaagaatttgatactgacttaaaacca
+agacttcatgtaaatgcaccatttgtttgtcagaataattgtcctggtcaattatttgta
+aaagttgcgcctaatttaacgaatgaatatgatcctgatgcatctgctaatatgtcaaga
+attgtaacttattcagatttttggtggaaaggtaaattagtatttaaagctaaactaaga
+gcatctcatacttggaatccaattcaacaaatgagtattaatgtagataaccaatttaac
+tatgtaccaaataatattggagctatgaaaattgtatatgaaaaatctcaactagcacct
+agaaaattatattaa
+
+=&gt; [#&lt;Bio::GenBank:0x0000559778699960 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000048                2007 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for nonstructural protein 1,\n            complete cds, isolate: 483.\n", "ACCESSION"=&gt;"ACCESSION   AB000048\n", "VERSION"=&gt;"VERSION     AB000048.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs from\n            that of canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 2007)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..2007\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"483\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..2007\n                     /codon_start=1\n                     /product=\"nonstructural protein 1\"\n                     /protein_id=\"BAA19009.1\"\n                     /translation=\"MSGNQYTEEVMEGVNWLKKHAEDEAFSFVFKCDNVQLNGKDVRW\n                     NNYTKPIQNEELTSLIRGAQTAMDQTEEEEMDWESEVDSLAKKQVQTFDALIKKCLFE\n                     VFVSKNIEPNECVWFIQHEWGKDQGWHCHVLLHSKNLQQATGKWLRRQMNMYWSRWLV\n                     TLCSINLTPTEKIKLREIAEDSEWVTILTYRHKQTKKDYVKMVHFGNMIAYYFLTKKK\n                     IVHMTKESGYFLSTDSGWKFNFMKYQDRHTVSTLYTEQMKPETVETTVTTAQETKRGR\n                     IQTKKEVSIKCTLRDLVSKRVTSPEDWMMLQPDSYIEMMAQPGGENLLKNTLEICTLT\n                     LARTKTAFELILEKADNTKLTNFDLANSRTCQIFRMHGWNWIKVCHAIACVLNRQGGK\n                     RNTVLFHGPASTGKSIIAQAIAQAVGNVGCYNAANVNFPFNDCTNKNLIWVEEAGNFG\n                     QQVNQFKAICSGQTIRIDQKGKGSKQIEPTPVIMTTNENITIVRIGCEERPEHTQPIR\n                     DRMLNIKLVCKLPGDFGLVDKEEWPLICAWLVKHGYQSTMANYTHHWGKVPEWDENWA\n                     EPKIQEGINSPGCKDLETQAASNPQSQDHVLTPLTPDVVDLALEPWSTPDTPIAETAN\n                     QQSNQLGVTHKDVQASPTWSEIEADLRAIFTSEQLEEDFRDDLD\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgtctggca accagtatac tgaggaagtt atggagggag taaattggtt aaagaaacat\n       61 gcagaagatg aagcattttc gtttgttttt aaatgtgaca acgtccaact aaatggaaag\n      121 gatgttcgct ggaacaacta taccaaacca attcaaaatg aagagctaac atctttaatt\n      181 agaggagcac aaacagcaat ggatcaaacc gaagaagaag aaatggactg ggaatcggaa\n      241 gttgatagtc tcgccaaaaa gcaagtacaa acttttgatg cattaattaa aaaatgtctt\n      301 tttgaagtct ttgtttctaa aaatatagaa ccaaatgaat gtgtttggtt tattcaacat\n      361 gaatggggaa aagatcaagg ctggcattgt catgttttac ttcatagtaa gaacttacaa\n      421 caagcaactg gtaaatggct acgcagacaa atgaatatgt attggagtag atggttggtg\n      481 actctttgtt cgataaattt aacaccaact gaaaagatta agctcagaga aattgcagaa\n      541 gatagtgaat gggtaactat attaacatac agacataagc aaacaaaaaa agactatgtt\n      601 aaaatggttc attttggaaa tatgatagca tattactttt taacaaagaa aaaaattgtc\n      661 cacatgacaa aagaaagtgg ctatttttta agtactgatt ctggttggaa atttaacttt\n      721 atgaagtatc aagacagaca tactgtcagc acactttaca ctgaacaaat gaaaccagaa\n      781 accgttgaaa ccacagtgac gacagcacag gaaacaaagc gcgggagaat tcaaactaaa\n      841 aaggaagtgt caatcaaatg tactttgcgg gacttggtta gtaaaagagt aacatcacct\n      901 gaagactgga tgatgttaca accagatagt tatattgaaa tgatggcaca accaggaggt\n      961 gaaaatctct taaaaaatac acttgaaatt tgtactttga ctttagcaag aacaaaaaca\n     1021 gcatttgaat taatacttga aaaagcagat aataccaaac taactaactt tgatcttgca\n     1081 aattctagaa catgtcaaat ttttagaatg cacggatgga attggattaa agtttgtcac\n     1141 gctatagcat gtgttttaaa tagacaaggt ggtaaaagaa atacagttct ttttcatgga\n     1201 ccagcaagta caggaaaatc tattattgct caagccatag cacaagctgt gggtaatgtt\n     1261 ggttgctata atgcagcaaa tgtaaatttt ccatttaatg actgtaccaa taaaaattta\n     1321 atttgggttg aagaagctgg taactttggt caacaagtta atcaatttaa agcaatttgt\n     1381 tctggacaaa caattagaat tgatcaaaaa ggtaaaggaa gtaagcaaat tgaaccaact\n     1441 ccagtaatta tgacaactaa tgaaaatata acaattgtaa gaattggatg tgaagaaaga\n     1501 cctgaacata cacaaccaat aagagacaga atgttgaaca ttaaattagt atgtaagctt\n     1561 ccaggagact ttggtttggt tgataaagaa gaatggcctt taatatgtgc atggttagtt\n     1621 aaacatggtt atcaatcaac catggctaac tacacacatc attggggaaa agtaccagag\n     1681 tgggatgaaa actgggcgga gcctaaaata caagaaggta taaattcacc aggttgcaaa\n     1741 gacttagaga cacaagcggc aagcaatcct cagagtcaag accacgttct aactcctctg\n     1801 actccggacg tagtggacct tgcactggaa ccgtggagta ctccagatac gcctattgca\n     1861 gaaactgcaa atcaacaatc aaaccaactt ggcgttactc acaaagacgt gcaagcgagt\n     1921 ccgacatggt ccgaaataga ggcagacctg agagccattt ttacttctga acaattggaa\n     1981 gaagattttc gagacgactt ggattaa\n", "//"=&gt;"//"}, @data={"VERSION"=&gt;["AB000048.1"], "DEFINITION"=&gt;"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 483.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatctcttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataataccaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaaattagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctgagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"}&gt;, #&lt;Bio::GenBank:0x0000559778698ce0 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000049                2007 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for nonstructural protein 1,\n            complete cds, isolate: 94-1.\n", "ACCESSION"=&gt;"ACCESSION   AB000049\n", "VERSION"=&gt;"VERSION     AB000049.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs that of\n            canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 2007)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..2007\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"94-1\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..2007\n                     /codon_start=1\n                     /product=\"nonstructural protein 1\"\n                     /protein_id=\"BAA19010.1\"\n                     /translation=\"MSGNQYTEEVMEGVNWLKKHAEDEAFSFVFKCDNVQLNGKDVRW\n                     NNYTKPIQNEELTSLIRGAQTAMDQTEEEEMDWESEVDSLAKKQVQTFDALIKKCLFE\n                     VFVSKNIEPNECVWFIQHEWGKDQGWHCHVLLHSKNLQQATGKWLRRQMNMYWSRWLV\n                     TLCSINLTPTEKIKLREIAEDSEWVTILTYRHKQTKKDYVKMVHFGNMIAYYFLTKKK\n                     IVHMTKESGYFLSTDSGWKFNFMKYQDRHTVSTLYTEQMKPETVETTVTTAQETKRGR\n                     IQTKKEVSIKCTLRDLVSKRVTSPEDWMMLQPDSYIEMMAQPGGENLLKNTLEICTLT\n                     LARTKTAFELILEKADNTKLTNFDLANSRTCQIFRMHGWNWIKVCHAIACVLNRQGGK\n                     RNTVLFHGPASTGKSIIAQAIAQAVGNVGCYNAANVNFPFNDCTNKNLIWVEEAGNFG\n                     QQVNQFKAICSGQTIRIDQKGKGSKQIEPTPVIMTTNENITIVRIGCEERPEHTQPIR\n                     DRMLNIKLVCKLPGDFGLVDKEEWPLICAWLVKHGYQSTMANYTHHWGKVPEWDENWA\n                     EPKIQEGINSPGCKDLETQAASNPQSQDHVLTPLTPDVVDLALEPWSTPDTPIAETAN\n                     QQSNQLGVTHKDVQASPTWSEIEADLRAIFTSEQLEEDFRDDLD\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgtctggca accagtatac tgaggaagtt atggagggag taaattggtt aaagaaacat\n       61 gcagaagatg aagcattttc gtttgttttt aaatgtgaca acgtccaact aaatggaaag\n      121 gatgttcgct ggaacaacta taccaaacca attcaaaatg aagagctaac atctttaatt\n      181 agaggagcac aaacagcaat ggatcaaacc gaagaagaag aaatggactg ggaatcggaa\n      241 gttgatagtc tcgccaaaaa gcaagtacaa acttttgatg cattaattaa aaaatgtctt\n      301 tttgaagtct ttgtttctaa aaatatagaa ccaaatgaat gtgtttggtt tattcaacat\n      361 gaatggggaa aagatcaagg ctggcattgt catgttttac ttcatagtaa gaacttacaa\n      421 caagcaactg gtaaatggct acgcagacaa atgaatatgt attggagtag atggttggtg\n      481 actctttgtt cgataaattt aacaccaact gaaaagatta agctcagaga aattgcagaa\n      541 gatagtgaat gggtaactat attaacatac agacataagc aaacaaaaaa agactatgtt\n      601 aaaatggttc attttggaaa tatgatagca tattactttt taacaaagaa aaaaattgtc\n      661 cacatgacaa aagaaagtgg ctatttttta agtactgatt ctggttggaa atttaacttt\n      721 atgaagtatc aagacagaca tactgtcagc acactttaca ctgaacaaat gaaaccagaa\n      781 accgttgaaa ccacagtgac gacagcacag gaaacaaagc gcgggagaat tcaaactaaa\n      841 aaggaagtgt caatcaaatg tactttgcgg gacttggtta gtaaaagagt aacatcacct\n      901 gaagactgga tgatgttaca accagatagt tatattgaaa tgatggcaca accaggaggt\n      961 gaaaatcttt taaaaaatac acttgaaatt tgtactttga ctttagcaag aacaaaaaca\n     1021 gcatttgaat taatacttga aaaagcagat aatactaaac taactaactt tgatcttgca\n     1081 aattctagaa catgtcaaat ttttagaatg cacggatgga attggattaa agtttgtcac\n     1141 gctatagcat gtgttttaaa tagacaaggt ggtaaaagaa atacagttct ttttcatgga\n     1201 ccagcaagta caggaaaatc tattattgct caagccatag cacaagctgt gggtaatgtt\n     1261 ggttgctata atgcagcaaa tgtaaatttt ccatttaatg actgtaccaa taaaaattta\n     1321 atttgggttg aagaagctgg taactttggt caacaagtta atcaatttaa agcaatttgt\n     1381 tctggacaaa caattagaat tgatcaaaaa ggtaaaggaa gtaagcaaat tgaaccaact\n     1441 ccagtaatta tgacaactaa tgaaaatata acaattgtaa gaattggatg tgaagaaaga\n     1501 cctgaacata cacaaccaat aagagacaga atgttgaaca ttaagttagt atgtaagctt\n     1561 ccaggagact ttggtttggt tgataaagaa gaatggcctt taatatgtgc atggttagtt\n     1621 aaacatggtt atcaatcaac catggctaac tacacacatc attggggaaa agtaccagag\n     1681 tgggatgaaa actgggcgga gcctaaaata caagaaggta taaattcacc aggttgcaaa\n     1741 gacttagaga cacaagcggc aagcaatcct cagagtcaag accacgttct aactcctctg\n     1801 actccggacg tagtggacct tgcactggaa ccgtggagta ctccagatac gcctattgca\n     1861 gaaactgcaa atcaacaatc aaaccaactt ggcgttactc acaaagacgt gcaagcgagt\n     1921 ccgacatggt ccgaaataga ggcagaccta agagccattt ttacttctga acaattggaa\n     1981 gaagattttc gagacgactt ggattaa\n", "//"=&gt;"//"}, @data={"VERSION"=&gt;["AB000049.1"], "DEFINITION"=&gt;"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 94-1.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatcttttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataatactaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaagttagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctaagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"}&gt;, #&lt;Bio::GenBank:0x0000559778698088 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000050                1755 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for capsid protein 2, complete cds,\n            isolate: 94-1.\n", "ACCESSION"=&gt;"ACCESSION   AB000050\n", "VERSION"=&gt;"VERSION     AB000050.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs from\n            that of canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 1755)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..1755\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"94-1\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..1755\n                     /codon_start=1\n                     /product=\"capsid protein 2\"\n                     /protein_id=\"BAA19011.1\"\n                     /translation=\"MSDGAVQPDGGQPAVRNERATGSGNGSGGGGGGGSGGVGISTGT\n                     FNNQTEFKFLENGWVEITANSSRLVHLNMPESENYKRVVVNNMDKTAVKGNMALDDTH\n                     VQIVTPWSLVDANAWGVWFNPGDWQLIVNTMSELHLVSFEQEIFNVVLKTVSESATQP\n                     PTKVYNNDLTASLMVALDSNNTMPFTPAAMRSETLGFYPWKPTIPTPWRYYFQWDRTL\n                     IPSHTGTSGTPTNVYHGTDPDDVQFYTIENSVPVHLLRTGDEFATGTFFFDCKPCRLT\n                     HTWQTNRALGLPPFLNSLPQSEGATNFGDIGVQQDKRRGVTQMGNTDYITEATIMRPA\n                     EVGYSAPYYSFEASTQGPFKTPIAAGRGGAQTDENQAADGDPRYAFGRQHGQKTTTTG\n                     ETPERFTYIAHQDTGRYPEGDWIQNINFNLPVTNDNVLLPTDPIGGKTGINYTNIFNT\n                     YGPLTALNNVPPVYPNGQIWDKEFDTDLKPRLHVNAPFVCQNNCPGQLFVKVAPNLTN\n                     EYDPDASANMSRIVTYSDFWWKGKLVFKAKLRASHTWNPIQQMSINVDNQFNYVPNNI\n                     GAMKIVYEKSQLAPRKLY\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgagtgatg gagcagttca accagacggt ggtcaacctg ctgtcagaaa tgaaagagct\n       61 acaggatctg ggaacgggtc tggaggcggg ggtggtggtg gttctggggg tgtggggatt\n      121 tctacgggta ctttcaataa tcagacggaa tttaaatttt tggaaaacgg gtgggtggaa\n      181 atcacagcaa actcaagcag acttgtacat ttaaatatgc cagaaagtga aaattataaa\n      241 agagtagttg taaataatat ggataaaact gcagttaaag gaaatatggc tttagatgat\n      301 actcatgtac aaattgtaac accttggtca ttggttgatg caaatgcttg gggagtttgg\n      361 tttaatccag gagattggca actaattgtt aatactatga gtgagttgca tttagttagt\n      421 tttgaacaag aaatttttaa tgttgtttta aagactgttt cagaatctgc tactcagcca\n      481 ccaactaaag tttataataa tgatttaact gcatcattga tggttgcatt agatagtaat\n      541 aatactatgc catttactcc agcagctatg agatctgaga cattgggttt ttatccatgg\n      601 aaaccaacca taccaactcc atggagatat tattttcaat gggatagaac attaatacca\n      661 tctcatactg gaactagtgg cacaccaaca aatgtatatc atggtacaga tccagatgat\n      721 gttcaatttt atactattga aaattctgtg ccagtacact tactaagaac aggtgatgaa\n      781 tttgctacag gaacattttt ttttgattgt aaaccatgta gactaacaca tacatggcaa\n      841 acaaatagag cattgggctt accaccattt ttaaattctt tgcctcaatc tgaaggagct\n      901 actaactttg gtgatatagg agttcaacaa gataaaagac gtggtgtaac tcaaatggga\n      961 aatacagact atattactga agctactatt atgagaccag ctgaggttgg ttatagtgca\n     1021 ccatactatt cttttgaagc gtctacacaa gggccattta aaacacctat tgcagcagga\n     1081 cgggggggag cgcaaacaga tgaaaatcaa gcagcagatg gtgatccaag atatgcattt\n     1141 ggtagacaac atggtcaaaa aactactaca acaggagaaa cacctgagag atttacatat\n     1201 atagcacatc aagatacagg aagatatcca gaaggagatt ggattcaaaa tattaacttt\n     1261 aaccttcctg taacaaatga taatgtattg ctaccaacag atccaattgg aggtaaaaca\n     1321 ggaattaact atactaatat atttaatact tatggtcctt taactgcatt aaataatgta\n     1381 ccaccagttt atccaaatgg tcaaatttgg gataaagaat ttgatactga cttaaaacca\n     1441 agacttcatg taaatgcacc atttgtttgt cagaataatt gtcctggtca attatttgta\n     1501 aaagttgcgc ctaatttaac gaatgaatat gatcctgatg catctgctaa tatgtcaaga\n     1561 attgtaactt attcagattt ttggtggaaa ggtaaattag tatttaaagc taaactaaga\n     1621 gcatctcata cttggaatcc aattcaacaa atgagtatta atgtagataa ccaatttaac\n     1681 tatgtaccaa ataatattgg agctatgaaa attgtatatg aaaaatctca actagcacct\n     1741 agaaaattat attaa\n", "//"=&gt;"//"}, @data={"VERSION"=&gt;["AB000050.1"], "DEFINITION"=&gt;"Feline panleukopenia virus gene for capsid protein 2, complete cds, isolate: 94-1.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgagtgatggagcagttcaaccagacggtggtcaacctgctgtcagaaatgaaagagctacaggatctgggaacgggtctggaggcgggggtggtggtggttctgggggtgtggggatttctacgggtactttcaataatcagacggaatttaaatttttggaaaacgggtgggtggaaatcacagcaaactcaagcagacttgtacatttaaatatgccagaaagtgaaaattataaaagagtagttgtaaataatatggataaaactgcagttaaaggaaatatggctttagatgatactcatgtacaaattgtaacaccttggtcattggttgatgcaaatgcttggggagtttggtttaatccaggagattggcaactaattgttaatactatgagtgagttgcatttagttagttttgaacaagaaatttttaatgttgttttaaagactgtttcagaatctgctactcagccaccaactaaagtttataataatgatttaactgcatcattgatggttgcattagatagtaataatactatgccatttactccagcagctatgagatctgagacattgggtttttatccatggaaaccaaccataccaactccatggagatattattttcaatgggatagaacattaataccatctcatactggaactagtggcacaccaacaaatgtatatcatggtacagatccagatgatgttcaattttatactattgaaaattctgtgccagtacacttactaagaacaggtgatgaatttgctacaggaacatttttttttgattgtaaaccatgtagactaacacatacatggcaaacaaatagagcattgggcttaccaccatttttaaattctttgcctcaatctgaaggagctactaactttggtgatataggagttcaacaagataaaagacgtggtgtaactcaaatgggaaatacagactatattactgaagctactattatgagaccagctgaggttggttatagtgcaccatactattcttttgaagcgtctacacaagggccatttaaaacacctattgcagcaggacgggggggagcgcaaacagatgaaaatcaagcagcagatggtgatccaagatatgcatttggtagacaacatggtcaaaaaactactacaacaggagaaacacctgagagatttacatatatagcacatcaagatacaggaagatatccagaaggagattggattcaaaatattaactttaaccttcctgtaacaaatgataatgtattgctaccaacagatccaattggaggtaaaacaggaattaactatactaatatatttaatacttatggtcctttaactgcattaaataatgtaccaccagtttatccaaatggtcaaatttgggataaagaatttgatactgacttaaaaccaagacttcatgtaaatgcaccatttgtttgtcagaataattgtcctggtcaattatttgtaaaagttgcgcctaatttaacgaatgaatatgatcctgatgcatctgctaatatgtcaagaattgtaacttattcagatttttggtggaaaggtaaattagtatttaaagctaaactaagagcatctcatacttggaatccaattcaacaaatgagtattaatgtagataaccaatttaactatgtaccaaataatattggagctatgaaaattgtatatgaaaaatctcaactagcacctagaaaattatattaa"}&gt;]
+</code></pre>
+</p>
+
+<p>Next, we are going to parse the GenBank ‘features’, which is normally very complicated:</p>
+
+<pre><code>#!/usr/bin/env ruby
+
+require 'bio'
+
+ff = Bio::FlatFile.new(Bio::GenBank, ARGF)
+
+# iterates over each GenBank entry
+ff.each_entry do |gb|
+
+  # shows accession and organism
+  puts "# #{gb.accession} - #{gb.organism}"
+
+  # iterates over each element in 'features'
+  gb.features.each do |feature|
+    position = feature.position
+    hash = feature.assoc            # put into Hash
+
+    # skips the entry if "/translation=" is not found
+    next unless hash['translation']
+
+    # collects gene name and so on and joins it into a string
+    gene_info = [
+      hash['gene'], hash['product'], hash['note'], hash['function']
+    ].compact.join(', ')
+
+    # shows nucleic acid sequence
+    puts "&gt;NA splicing('#{position}') : #{gene_info}"
+    puts gb.naseq.splicing(position)
+
+    # shows amino acid sequence translated from nucleic acid sequence
+    puts "&gt;AA translated by splicing('#{position}').translate"
+    puts gb.naseq.splicing(position).translate
+
+    # shows amino acid sequence in the database entry (/translation=)
+    puts "&gt;AA original translation"
+    puts hash['translation']
+  end
+end
+</code></pre>
+
+<ul>
+  <li>Note: In this example Feature#assoc method makes a Hash from a feature object. It is useful because you can get data from the hash by using qualifiers as keys. But there is a risk some information is lost  when two or more qualifiers are the same. Therefore an Array is returned by  Feature#feature.</li>
+</ul>
+
+<p>Bio::Sequence#splicing splices subsequences from nucleic acid sequences according to location information used in GenBank, EMBL and DDBJ.</p>
+
+<p>When the specified translation table is different from the default (universal), or when the first codon is not “atg” or the protein contains selenocysteine, the two amino acid sequences will differ.</p>
+
+<p>The Bio::Sequence#splicing method takes not only DDBJ/EMBL/GenBank feature style location text but also Bio::Locations object. For more information about location format and Bio::Locations class, see bio/location.rb.</p>
+
+<ul>
+  <li>
+    <p>Splice according to location string used in a GenBank entry</p>
+
+    <p>~~~
+  naseq.splicing(‘join(2035..2050,complement(1775..1818),13..345’)
+  ~~~</p>
+  </li>
+  <li>
+    <p>Generate Bio::Locations object and pass the splicing method</p>
+
+    <p>~~~
+  locs = Bio::Locations.new(‘join((8298.8300)..10206,1..855)’)
+  naseq.splicing(locs)
+  ~~~</p>
+  </li>
+</ul>
+
+<p>You can also use this splicing method for amino acid sequences (Bio::Sequence::AA objects).</p>
+
+<ul>
+  <li>
+    <p>Splicing peptide from a protein (e.g. signal peptide)</p>
+
+    <p>~~~
+  aaseq.splicing(‘21..119’)
+  ~~~</p>
+  </li>
+</ul>
+
+<h3 id="more-databases">More databases</h3>
+
+<p>Databases in BioRuby are essentially accessed like that of GenBank with classes like Bio::GenBank, Bio::KEGG::GENES. A full list can be found in the ./lib/bio/db directory of the BioRuby source tree.</p>
+
+<p>In many cases the Bio::DatabaseClass acts as a factory pattern and recognises the database type automatically - returning a parsed object. For example using Bio::FlatFile class as described above. The first argument of the Bio::FlatFile.new is database class name in BioRuby (such as Bio::GenBank, Bio::KEGG::GENES and so on).</p>
+
+<pre><code>ff = Bio::FlatFile.new(Bio::DatabaseClass, ARGF)
+</code></pre>
+
+<p>Isn’t it wonderful that Bio::FlatFile automagically recognizes each database class?</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>require <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">bio</span><span style="color:#710">'</span></span>
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span>ff = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">FlatFile</span>.auto(<span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">&quot;</span><span style="color:#D20">gbvrl1.seq</span><span style="color:#710">&quot;</span></span>)
+<span class="line-numbers"><a href="#n4" name="n4">4</a></span>ff.entries[<span style="color:#00D">0</span>..<span style="color:#00D">2</span>].each <span style="color:#080;font-weight:bold">do</span> |entry|
+<span class="line-numbers"><a href="#n5" name="n5">5</a></span>  p entry.entry_id          <span style="color:#777"># identifier of the entry</span>
+<span class="line-numbers"><a href="#n6" name="n6">6</a></span>  p entry.definition        <span style="color:#777"># definition of the entry</span>
+<span class="line-numbers"><a href="#n7" name="n7">7</a></span>  p entry.seq               <span style="color:#777"># sequence data of the entry</span>
+<span class="line-numbers"><a href="#n8" name="n8">8</a></span><span style="color:#080;font-weight:bold">end</span>
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>"AB000048"
+"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 483."
+"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatctcttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataataccaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaaattagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctgagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"
+"AB000049"
+"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 94-1."
+"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatcttttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataatactaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaagttagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctaagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"
+"AB000050"
+"Feline panleukopenia virus gene for capsid protein 2, complete cds, isolate: 94-1."
+"atgagtgatggagcagttcaaccagacggtggtcaacctgctgtcagaaatgaaagagctacaggatctgggaacgggtctggaggcgggggtggtggtggttctgggggtgtggggatttctacgggtactttcaataatcagacggaatttaaatttttggaaaacgggtgggtggaaatcacagcaaactcaagcagacttgtacatttaaatatgccagaaagtgaaaattataaaagagtagttgtaaataatatggataaaactgcagttaaaggaaatatggctttagatgatactcatgtacaaattgtaacaccttggtcattggttgatgcaaatgcttggggagtttggtttaatccaggagattggcaactaattgttaatactatgagtgagttgcatttagttagttttgaacaagaaatttttaatgttgttttaaagactgtttcagaatctgctactcagccaccaactaaagtttataataatgatttaactgcatcattgatggttgcattagatagtaataatactatgccatttactccagcagctatgagatctgagacattgggtttttatccatggaaaccaaccataccaactccatggagatattattttcaatgggatagaacattaataccatctcatactggaactagtggcacaccaacaaatgtatatcatggtacagatccagatgatgttcaattttatactattgaaaattctgtgccagtacacttactaagaacaggtgatgaatttgctacaggaacatttttttttgattgtaaaccatgtagactaacacatacatggcaaacaaatagagcattgggcttaccaccatttttaaattctttgcctcaatctgaaggagctactaactttggtgatataggagttcaacaagataaaagacgtggtgtaactcaaatgggaaatacagactatattactgaagctactattatgagaccagctgaggttggttatagtgcaccatactattcttttgaagcgtctacacaagggccatttaaaacacctattgcagcaggacgggggggagcgcaaacagatgaaaatcaagcagcagatggtgatccaagatatgcatttggtagacaacatggtcaaaaaactactacaacaggagaaacacctgagagatttacatatatagcacatcaagatacaggaagatatccagaaggagattggattcaaaatattaactttaaccttcctgtaacaaatgataatgtattgctaccaacagatccaattggaggtaaaacaggaattaactatactaatatatttaatacttatggtcctttaactgcattaaataatgtaccaccagtttatccaaatggtcaaatttgggataaagaatttgatactgacttaaaaccaagacttcatgtaaatgcaccatttgtttgtcagaataattgtcctggtcaattatttgtaaaagttgcgcctaatttaacgaatgaatatgatcctgatgcatctgctaatatgtcaagaattgtaacttattcagatttttggtggaaaggtaaattagtatttaaagctaaactaagagcatctcatacttggaatccaattcaacaaatgagtattaatgtagataaccaatttaactatgtaccaaataatattggagctatgaaaattgtatatgaaaaatctcaactagcacctagaaaattatattaa"
+
+=&gt; [#&lt;Bio::GenBank:0x0000559792652640 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000048                2007 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for nonstructural protein 1,\n            complete cds, isolate: 483.\n", "ACCESSION"=&gt;"ACCESSION   AB000048\n", "VERSION"=&gt;"VERSION     AB000048.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs from\n            that of canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 2007)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..2007\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"483\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..2007\n                     /codon_start=1\n                     /product=\"nonstructural protein 1\"\n                     /protein_id=\"BAA19009.1\"\n                     /translation=\"MSGNQYTEEVMEGVNWLKKHAEDEAFSFVFKCDNVQLNGKDVRW\n                     NNYTKPIQNEELTSLIRGAQTAMDQTEEEEMDWESEVDSLAKKQVQTFDALIKKCLFE\n                     VFVSKNIEPNECVWFIQHEWGKDQGWHCHVLLHSKNLQQATGKWLRRQMNMYWSRWLV\n                     TLCSINLTPTEKIKLREIAEDSEWVTILTYRHKQTKKDYVKMVHFGNMIAYYFLTKKK\n                     IVHMTKESGYFLSTDSGWKFNFMKYQDRHTVSTLYTEQMKPETVETTVTTAQETKRGR\n                     IQTKKEVSIKCTLRDLVSKRVTSPEDWMMLQPDSYIEMMAQPGGENLLKNTLEICTLT\n                     LARTKTAFELILEKADNTKLTNFDLANSRTCQIFRMHGWNWIKVCHAIACVLNRQGGK\n                     RNTVLFHGPASTGKSIIAQAIAQAVGNVGCYNAANVNFPFNDCTNKNLIWVEEAGNFG\n                     QQVNQFKAICSGQTIRIDQKGKGSKQIEPTPVIMTTNENITIVRIGCEERPEHTQPIR\n                     DRMLNIKLVCKLPGDFGLVDKEEWPLICAWLVKHGYQSTMANYTHHWGKVPEWDENWA\n                     EPKIQEGINSPGCKDLETQAASNPQSQDHVLTPLTPDVVDLALEPWSTPDTPIAETAN\n                     QQSNQLGVTHKDVQASPTWSEIEADLRAIFTSEQLEEDFRDDLD\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgtctggca accagtatac tgaggaagtt atggagggag taaattggtt aaagaaacat\n       61 gcagaagatg aagcattttc gtttgttttt aaatgtgaca acgtccaact aaatggaaag\n      121 gatgttcgct ggaacaacta taccaaacca attcaaaatg aagagctaac atctttaatt\n      181 agaggagcac aaacagcaat ggatcaaacc gaagaagaag aaatggactg ggaatcggaa\n      241 gttgatagtc tcgccaaaaa gcaagtacaa acttttgatg cattaattaa aaaatgtctt\n      301 tttgaagtct ttgtttctaa aaatatagaa ccaaatgaat gtgtttggtt tattcaacat\n      361 gaatggggaa aagatcaagg ctggcattgt catgttttac ttcatagtaa gaacttacaa\n      421 caagcaactg gtaaatggct acgcagacaa atgaatatgt attggagtag atggttggtg\n      481 actctttgtt cgataaattt aacaccaact gaaaagatta agctcagaga aattgcagaa\n      541 gatagtgaat gggtaactat attaacatac agacataagc aaacaaaaaa agactatgtt\n      601 aaaatggttc attttggaaa tatgatagca tattactttt taacaaagaa aaaaattgtc\n      661 cacatgacaa aagaaagtgg ctatttttta agtactgatt ctggttggaa atttaacttt\n      721 atgaagtatc aagacagaca tactgtcagc acactttaca ctgaacaaat gaaaccagaa\n      781 accgttgaaa ccacagtgac gacagcacag gaaacaaagc gcgggagaat tcaaactaaa\n      841 aaggaagtgt caatcaaatg tactttgcgg gacttggtta gtaaaagagt aacatcacct\n      901 gaagactgga tgatgttaca accagatagt tatattgaaa tgatggcaca accaggaggt\n      961 gaaaatctct taaaaaatac acttgaaatt tgtactttga ctttagcaag aacaaaaaca\n     1021 gcatttgaat taatacttga aaaagcagat aataccaaac taactaactt tgatcttgca\n     1081 aattctagaa catgtcaaat ttttagaatg cacggatgga attggattaa agtttgtcac\n     1141 gctatagcat gtgttttaaa tagacaaggt ggtaaaagaa atacagttct ttttcatgga\n     1201 ccagcaagta caggaaaatc tattattgct caagccatag cacaagctgt gggtaatgtt\n     1261 ggttgctata atgcagcaaa tgtaaatttt ccatttaatg actgtaccaa taaaaattta\n     1321 atttgggttg aagaagctgg taactttggt caacaagtta atcaatttaa agcaatttgt\n     1381 tctggacaaa caattagaat tgatcaaaaa ggtaaaggaa gtaagcaaat tgaaccaact\n     1441 ccagtaatta tgacaactaa tgaaaatata acaattgtaa gaattggatg tgaagaaaga\n     1501 cctgaacata cacaaccaat aagagacaga atgttgaaca ttaaattagt atgtaagctt\n     1561 ccaggagact ttggtttggt tgataaagaa gaatggcctt taatatgtgc atggttagtt\n     1621 aaacatggtt atcaatcaac catggctaac tacacacatc attggggaaa agtaccagag\n     1681 tgggatgaaa actgggcgga gcctaaaata caagaaggta taaattcacc aggttgcaaa\n     1741 gacttagaga cacaagcggc aagcaatcct cagagtcaag accacgttct aactcctctg\n     1801 actccggacg tagtggacct tgcactggaa ccgtggagta ctccagatac gcctattgca\n     1861 gaaactgcaa atcaacaatc aaaccaactt ggcgttactc acaaagacgt gcaagcgagt\n     1921 ccgacatggt ccgaaataga ggcagacctg agagccattt ttacttctga acaattggaa\n     1981 gaagattttc gagacgactt ggattaa\n", "//"=&gt;"//"}, @data={"LOCUS"=&gt;#&lt;Bio::GenBank::Locus:0x000055977f5564e8 @entry_id="AB000048", @length=2007, @strand="", @natype="DNA", @circular="linear", @division="VRL", @date="14-JUL-2009"&gt;, "DEFINITION"=&gt;"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 483.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatctcttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataataccaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaaattagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctgagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"}&gt;, #&lt;Bio::GenBank:0x00005597926519e8 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000049                2007 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for nonstructural protein 1,\n            complete cds, isolate: 94-1.\n", "ACCESSION"=&gt;"ACCESSION   AB000049\n", "VERSION"=&gt;"VERSION     AB000049.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs that of\n            canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 2007)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..2007\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"94-1\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..2007\n                     /codon_start=1\n                     /product=\"nonstructural protein 1\"\n                     /protein_id=\"BAA19010.1\"\n                     /translation=\"MSGNQYTEEVMEGVNWLKKHAEDEAFSFVFKCDNVQLNGKDVRW\n                     NNYTKPIQNEELTSLIRGAQTAMDQTEEEEMDWESEVDSLAKKQVQTFDALIKKCLFE\n                     VFVSKNIEPNECVWFIQHEWGKDQGWHCHVLLHSKNLQQATGKWLRRQMNMYWSRWLV\n                     TLCSINLTPTEKIKLREIAEDSEWVTILTYRHKQTKKDYVKMVHFGNMIAYYFLTKKK\n                     IVHMTKESGYFLSTDSGWKFNFMKYQDRHTVSTLYTEQMKPETVETTVTTAQETKRGR\n                     IQTKKEVSIKCTLRDLVSKRVTSPEDWMMLQPDSYIEMMAQPGGENLLKNTLEICTLT\n                     LARTKTAFELILEKADNTKLTNFDLANSRTCQIFRMHGWNWIKVCHAIACVLNRQGGK\n                     RNTVLFHGPASTGKSIIAQAIAQAVGNVGCYNAANVNFPFNDCTNKNLIWVEEAGNFG\n                     QQVNQFKAICSGQTIRIDQKGKGSKQIEPTPVIMTTNENITIVRIGCEERPEHTQPIR\n                     DRMLNIKLVCKLPGDFGLVDKEEWPLICAWLVKHGYQSTMANYTHHWGKVPEWDENWA\n                     EPKIQEGINSPGCKDLETQAASNPQSQDHVLTPLTPDVVDLALEPWSTPDTPIAETAN\n                     QQSNQLGVTHKDVQASPTWSEIEADLRAIFTSEQLEEDFRDDLD\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgtctggca accagtatac tgaggaagtt atggagggag taaattggtt aaagaaacat\n       61 gcagaagatg aagcattttc gtttgttttt aaatgtgaca acgtccaact aaatggaaag\n      121 gatgttcgct ggaacaacta taccaaacca attcaaaatg aagagctaac atctttaatt\n      181 agaggagcac aaacagcaat ggatcaaacc gaagaagaag aaatggactg ggaatcggaa\n      241 gttgatagtc tcgccaaaaa gcaagtacaa acttttgatg cattaattaa aaaatgtctt\n      301 tttgaagtct ttgtttctaa aaatatagaa ccaaatgaat gtgtttggtt tattcaacat\n      361 gaatggggaa aagatcaagg ctggcattgt catgttttac ttcatagtaa gaacttacaa\n      421 caagcaactg gtaaatggct acgcagacaa atgaatatgt attggagtag atggttggtg\n      481 actctttgtt cgataaattt aacaccaact gaaaagatta agctcagaga aattgcagaa\n      541 gatagtgaat gggtaactat attaacatac agacataagc aaacaaaaaa agactatgtt\n      601 aaaatggttc attttggaaa tatgatagca tattactttt taacaaagaa aaaaattgtc\n      661 cacatgacaa aagaaagtgg ctatttttta agtactgatt ctggttggaa atttaacttt\n      721 atgaagtatc aagacagaca tactgtcagc acactttaca ctgaacaaat gaaaccagaa\n      781 accgttgaaa ccacagtgac gacagcacag gaaacaaagc gcgggagaat tcaaactaaa\n      841 aaggaagtgt caatcaaatg tactttgcgg gacttggtta gtaaaagagt aacatcacct\n      901 gaagactgga tgatgttaca accagatagt tatattgaaa tgatggcaca accaggaggt\n      961 gaaaatcttt taaaaaatac acttgaaatt tgtactttga ctttagcaag aacaaaaaca\n     1021 gcatttgaat taatacttga aaaagcagat aatactaaac taactaactt tgatcttgca\n     1081 aattctagaa catgtcaaat ttttagaatg cacggatgga attggattaa agtttgtcac\n     1141 gctatagcat gtgttttaaa tagacaaggt ggtaaaagaa atacagttct ttttcatgga\n     1201 ccagcaagta caggaaaatc tattattgct caagccatag cacaagctgt gggtaatgtt\n     1261 ggttgctata atgcagcaaa tgtaaatttt ccatttaatg actgtaccaa taaaaattta\n     1321 atttgggttg aagaagctgg taactttggt caacaagtta atcaatttaa agcaatttgt\n     1381 tctggacaaa caattagaat tgatcaaaaa ggtaaaggaa gtaagcaaat tgaaccaact\n     1441 ccagtaatta tgacaactaa tgaaaatata acaattgtaa gaattggatg tgaagaaaga\n     1501 cctgaacata cacaaccaat aagagacaga atgttgaaca ttaagttagt atgtaagctt\n     1561 ccaggagact ttggtttggt tgataaagaa gaatggcctt taatatgtgc atggttagtt\n     1621 aaacatggtt atcaatcaac catggctaac tacacacatc attggggaaa agtaccagag\n     1681 tgggatgaaa actgggcgga gcctaaaata caagaaggta taaattcacc aggttgcaaa\n     1741 gacttagaga cacaagcggc aagcaatcct cagagtcaag accacgttct aactcctctg\n     1801 actccggacg tagtggacct tgcactggaa ccgtggagta ctccagatac gcctattgca\n     1861 gaaactgcaa atcaacaatc aaaccaactt ggcgttactc acaaagacgt gcaagcgagt\n     1921 ccgacatggt ccgaaataga ggcagaccta agagccattt ttacttctga acaattggaa\n     1981 gaagattttc gagacgactt ggattaa\n", "//"=&gt;"//"}, @data={"LOCUS"=&gt;#&lt;Bio::GenBank::Locus:0x000055977f555660 @entry_id="AB000049", @length=2007, @strand="", @natype="DNA", @circular="linear", @division="VRL", @date="14-JUL-2009"&gt;, "DEFINITION"=&gt;"Feline panleukopenia virus gene for nonstructural protein 1, complete cds, isolate: 94-1.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgtctggcaaccagtatactgaggaagttatggagggagtaaattggttaaagaaacatgcagaagatgaagcattttcgtttgtttttaaatgtgacaacgtccaactaaatggaaaggatgttcgctggaacaactataccaaaccaattcaaaatgaagagctaacatctttaattagaggagcacaaacagcaatggatcaaaccgaagaagaagaaatggactgggaatcggaagttgatagtctcgccaaaaagcaagtacaaacttttgatgcattaattaaaaaatgtctttttgaagtctttgtttctaaaaatatagaaccaaatgaatgtgtttggtttattcaacatgaatggggaaaagatcaaggctggcattgtcatgttttacttcatagtaagaacttacaacaagcaactggtaaatggctacgcagacaaatgaatatgtattggagtagatggttggtgactctttgttcgataaatttaacaccaactgaaaagattaagctcagagaaattgcagaagatagtgaatgggtaactatattaacatacagacataagcaaacaaaaaaagactatgttaaaatggttcattttggaaatatgatagcatattactttttaacaaagaaaaaaattgtccacatgacaaaagaaagtggctattttttaagtactgattctggttggaaatttaactttatgaagtatcaagacagacatactgtcagcacactttacactgaacaaatgaaaccagaaaccgttgaaaccacagtgacgacagcacaggaaacaaagcgcgggagaattcaaactaaaaaggaagtgtcaatcaaatgtactttgcgggacttggttagtaaaagagtaacatcacctgaagactggatgatgttacaaccagatagttatattgaaatgatggcacaaccaggaggtgaaaatcttttaaaaaatacacttgaaatttgtactttgactttagcaagaacaaaaacagcatttgaattaatacttgaaaaagcagataatactaaactaactaactttgatcttgcaaattctagaacatgtcaaatttttagaatgcacggatggaattggattaaagtttgtcacgctatagcatgtgttttaaatagacaaggtggtaaaagaaatacagttctttttcatggaccagcaagtacaggaaaatctattattgctcaagccatagcacaagctgtgggtaatgttggttgctataatgcagcaaatgtaaattttccatttaatgactgtaccaataaaaatttaatttgggttgaagaagctggtaactttggtcaacaagttaatcaatttaaagcaatttgttctggacaaacaattagaattgatcaaaaaggtaaaggaagtaagcaaattgaaccaactccagtaattatgacaactaatgaaaatataacaattgtaagaattggatgtgaagaaagacctgaacatacacaaccaataagagacagaatgttgaacattaagttagtatgtaagcttccaggagactttggtttggttgataaagaagaatggcctttaatatgtgcatggttagttaaacatggttatcaatcaaccatggctaactacacacatcattggggaaaagtaccagagtgggatgaaaactgggcggagcctaaaatacaagaaggtataaattcaccaggttgcaaagacttagagacacaagcggcaagcaatcctcagagtcaagaccacgttctaactcctctgactccggacgtagtggaccttgcactggaaccgtggagtactccagatacgcctattgcagaaactgcaaatcaacaatcaaaccaacttggcgttactcacaaagacgtgcaagcgagtccgacatggtccgaaatagaggcagacctaagagccatttttacttctgaacaattggaagaagattttcgagacgacttggattaa"}&gt;, #&lt;Bio::GenBank:0x0000559792650d90 @tagsize=12, @orig={"LOCUS"=&gt;"LOCUS       AB000050                1755 bp    DNA     linear   VRL 14-JUL-2009\n", "DEFINITION"=&gt;"DEFINITION  Feline panleukopenia virus gene for capsid protein 2, complete cds,\n            isolate: 94-1.\n", "ACCESSION"=&gt;"ACCESSION   AB000050\n", "VERSION"=&gt;"VERSION     AB000050.1\n", "KEYWORDS"=&gt;"KEYWORDS    .\n", "SOURCE"=&gt;"SOURCE      Feline panleukopenia virus\n  ORGANISM  Feline panleukopenia virus\n            Viruses; ssDNA viruses; Parvoviridae; Parvovirinae;\n            Protoparvovirus.\n", "REFERENCE"=&gt;"REFERENCE   1\n  AUTHORS   Horiuchi,M.\n  TITLE     Evolutionary pattern of feline panleukopenia virus differs from\n            that of canine parvovirus\n  JOURNAL   Unpublished\nREFERENCE   2  (bases 1 to 1755)\n  AUTHORS   Horiuchi,M.\n  TITLE     Direct Submission\n  JOURNAL   Submitted (22-DEC-1996) Contact:Motohiro Horiuchi Obihiro\n            University of Agriculture and Veterinary Medicine, Veterinary\n            Public Health; Inada cho, Obihiro, Hokkaido 080, Japan\n", "FEATURES"=&gt;"FEATURES             Location/Qualifiers\n     source          1..1755\n                     /organism=\"Feline panleukopenia virus\"\n                     /mol_type=\"genomic DNA\"\n                     /isolate=\"94-1\"\n                     /db_xref=\"taxon:10786\"\n                     /lab_host=\"Felis domesticus\"\n     CDS             1..1755\n                     /codon_start=1\n                     /product=\"capsid protein 2\"\n                     /protein_id=\"BAA19011.1\"\n                     /translation=\"MSDGAVQPDGGQPAVRNERATGSGNGSGGGGGGGSGGVGISTGT\n                     FNNQTEFKFLENGWVEITANSSRLVHLNMPESENYKRVVVNNMDKTAVKGNMALDDTH\n                     VQIVTPWSLVDANAWGVWFNPGDWQLIVNTMSELHLVSFEQEIFNVVLKTVSESATQP\n                     PTKVYNNDLTASLMVALDSNNTMPFTPAAMRSETLGFYPWKPTIPTPWRYYFQWDRTL\n                     IPSHTGTSGTPTNVYHGTDPDDVQFYTIENSVPVHLLRTGDEFATGTFFFDCKPCRLT\n                     HTWQTNRALGLPPFLNSLPQSEGATNFGDIGVQQDKRRGVTQMGNTDYITEATIMRPA\n                     EVGYSAPYYSFEASTQGPFKTPIAAGRGGAQTDENQAADGDPRYAFGRQHGQKTTTTG\n                     ETPERFTYIAHQDTGRYPEGDWIQNINFNLPVTNDNVLLPTDPIGGKTGINYTNIFNT\n                     YGPLTALNNVPPVYPNGQIWDKEFDTDLKPRLHVNAPFVCQNNCPGQLFVKVAPNLTN\n                     EYDPDASANMSRIVTYSDFWWKGKLVFKAKLRASHTWNPIQQMSINVDNQFNYVPNNI\n                     GAMKIVYEKSQLAPRKLY\"\n", "ORIGIN"=&gt;"ORIGIN      \n        1 atgagtgatg gagcagttca accagacggt ggtcaacctg ctgtcagaaa tgaaagagct\n       61 acaggatctg ggaacgggtc tggaggcggg ggtggtggtg gttctggggg tgtggggatt\n      121 tctacgggta ctttcaataa tcagacggaa tttaaatttt tggaaaacgg gtgggtggaa\n      181 atcacagcaa actcaagcag acttgtacat ttaaatatgc cagaaagtga aaattataaa\n      241 agagtagttg taaataatat ggataaaact gcagttaaag gaaatatggc tttagatgat\n      301 actcatgtac aaattgtaac accttggtca ttggttgatg caaatgcttg gggagtttgg\n      361 tttaatccag gagattggca actaattgtt aatactatga gtgagttgca tttagttagt\n      421 tttgaacaag aaatttttaa tgttgtttta aagactgttt cagaatctgc tactcagcca\n      481 ccaactaaag tttataataa tgatttaact gcatcattga tggttgcatt agatagtaat\n      541 aatactatgc catttactcc agcagctatg agatctgaga cattgggttt ttatccatgg\n      601 aaaccaacca taccaactcc atggagatat tattttcaat gggatagaac attaatacca\n      661 tctcatactg gaactagtgg cacaccaaca aatgtatatc atggtacaga tccagatgat\n      721 gttcaatttt atactattga aaattctgtg ccagtacact tactaagaac aggtgatgaa\n      781 tttgctacag gaacattttt ttttgattgt aaaccatgta gactaacaca tacatggcaa\n      841 acaaatagag cattgggctt accaccattt ttaaattctt tgcctcaatc tgaaggagct\n      901 actaactttg gtgatatagg agttcaacaa gataaaagac gtggtgtaac tcaaatggga\n      961 aatacagact atattactga agctactatt atgagaccag ctgaggttgg ttatagtgca\n     1021 ccatactatt cttttgaagc gtctacacaa gggccattta aaacacctat tgcagcagga\n     1081 cgggggggag cgcaaacaga tgaaaatcaa gcagcagatg gtgatccaag atatgcattt\n     1141 ggtagacaac atggtcaaaa aactactaca acaggagaaa cacctgagag atttacatat\n     1201 atagcacatc aagatacagg aagatatcca gaaggagatt ggattcaaaa tattaacttt\n     1261 aaccttcctg taacaaatga taatgtattg ctaccaacag atccaattgg aggtaaaaca\n     1321 ggaattaact atactaatat atttaatact tatggtcctt taactgcatt aaataatgta\n     1381 ccaccagttt atccaaatgg tcaaatttgg gataaagaat ttgatactga cttaaaacca\n     1441 agacttcatg taaatgcacc atttgtttgt cagaataatt gtcctggtca attatttgta\n     1501 aaagttgcgc ctaatttaac gaatgaatat gatcctgatg catctgctaa tatgtcaaga\n     1561 attgtaactt attcagattt ttggtggaaa ggtaaattag tatttaaagc taaactaaga\n     1621 gcatctcata cttggaatcc aattcaacaa atgagtatta atgtagataa ccaatttaac\n     1681 tatgtaccaa ataatattgg agctatgaaa attgtatatg aaaaatctca actagcacct\n     1741 agaaaattat attaa\n", "//"=&gt;"//"}, @data={"LOCUS"=&gt;#&lt;Bio::GenBank::Locus:0x000055977f554828 @entry_id="AB000050", @length=1755, @strand="", @natype="DNA", @circular="linear", @division="VRL", @date="14-JUL-2009"&gt;, "DEFINITION"=&gt;"Feline panleukopenia virus gene for capsid protein 2, complete cds, isolate: 94-1.", "ORIGIN"=&gt;"", "SEQUENCE"=&gt;"atgagtgatggagcagttcaaccagacggtggtcaacctgctgtcagaaatgaaagagctacaggatctgggaacgggtctggaggcgggggtggtggtggttctgggggtgtggggatttctacgggtactttcaataatcagacggaatttaaatttttggaaaacgggtgggtggaaatcacagcaaactcaagcagacttgtacatttaaatatgccagaaagtgaaaattataaaagagtagttgtaaataatatggataaaactgcagttaaaggaaatatggctttagatgatactcatgtacaaattgtaacaccttggtcattggttgatgcaaatgcttggggagtttggtttaatccaggagattggcaactaattgttaatactatgagtgagttgcatttagttagttttgaacaagaaatttttaatgttgttttaaagactgtttcagaatctgctactcagccaccaactaaagtttataataatgatttaactgcatcattgatggttgcattagatagtaataatactatgccatttactccagcagctatgagatctgagacattgggtttttatccatggaaaccaaccataccaactccatggagatattattttcaatgggatagaacattaataccatctcatactggaactagtggcacaccaacaaatgtatatcatggtacagatccagatgatgttcaattttatactattgaaaattctgtgccagtacacttactaagaacaggtgatgaatttgctacaggaacatttttttttgattgtaaaccatgtagactaacacatacatggcaaacaaatagagcattgggcttaccaccatttttaaattctttgcctcaatctgaaggagctactaactttggtgatataggagttcaacaagataaaagacgtggtgtaactcaaatgggaaatacagactatattactgaagctactattatgagaccagctgaggttggttatagtgcaccatactattcttttgaagcgtctacacaagggccatttaaaacacctattgcagcaggacgggggggagcgcaaacagatgaaaatcaagcagcagatggtgatccaagatatgcatttggtagacaacatggtcaaaaaactactacaacaggagaaacacctgagagatttacatatatagcacatcaagatacaggaagatatccagaaggagattggattcaaaatattaactttaaccttcctgtaacaaatgataatgtattgctaccaacagatccaattggaggtaaaacaggaattaactatactaatatatttaatacttatggtcctttaactgcattaaataatgtaccaccagtttatccaaatggtcaaatttgggataaagaatttgatactgacttaaaaccaagacttcatgtaaatgcaccatttgtttgtcagaataattgtcctggtcaattatttgtaaaagttgcgcctaatttaacgaatgaatatgatcctgatgcatctgctaatatgtcaagaattgtaacttattcagatttttggtggaaaggtaaattagtatttaaagctaaactaagagcatctcatacttggaatccaattcaacaaatgagtattaatgtagataaccaatttaactatgtaccaaataatattggagctatgaaaattgtatatgaaaaatctcaactagcacctagaaaattatattaa"}&gt;]
+</code></pre>
+</p>
+
+<p>An example that can take any input, filter using a regular expression and output to a FASTA file can be found in sample/any2fasta.rb. With this technique it is possible to write a Unix type grep/sort pipe for sequence information. One example using scripts in the BIORUBY sample folder:</p>
+
+<pre><code>fastagrep.rb '/At|Dm/' database.seq | fastasort.rb
+</code></pre>
+
+<p>greps the database for Arabidopsis and Drosophila entries and sorts the output to FASTA.</p>
+
+<p>Other methods to extract specific data from database objects can be different between databases, though some methods are common (see the guidelines for common methods in bio/db.rb).</p>
+
+<ul>
+  <li>entry_id –&gt; gets ID of the entry</li>
+  <li>definition –&gt; gets definition of the entry</li>
+  <li>reference –&gt; gets references as Bio::Reference object</li>
+  <li>organism –&gt; gets species</li>
+  <li>seq, naseq, aaseq –&gt; returns sequence as corresponding sequence object</li>
+</ul>
+
+<p>Refer to the documents of each database to find the exact naming of the included methods.</p>
+
+<p>In general, BioRuby uses the following conventions: when a method name is plural, the method returns some object as an Array. For example, some classes have a “references” method which returns multiple Bio::Reference objects as an Array. And some classes have a “reference” method which returns a single Bio::Reference object.</p>
+
+<h3 id="alignments-bioalignment">Alignments (Bio::Alignment)</h3>
+
+<p>The Bio::Alignment class in bio/alignment.rb is a container class like Ruby’s Hash and Array classes and BioPerl’s Bio::SimpleAlign.  A very simple example is:</p>
+
+<div class="language-ruby highlighter-coderay"><div class="CodeRay">
+  <div class="code"><pre><span class="line-numbers"><a href="#n1" name="n1">1</a></span>seqs = [ <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">atgca</span><span style="color:#710">'</span></span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">aagca</span><span style="color:#710">'</span></span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">acgca</span><span style="color:#710">'</span></span>, <span style="background-color:hsla(0,100%,50%,0.05)"><span style="color:#710">'</span><span style="color:#D20">acgcg</span><span style="color:#710">'</span></span> ]
+<span class="line-numbers"><a href="#n2" name="n2">2</a></span>seqs = seqs.collect{ |x| <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Sequence</span>::<span style="color:#036;font-weight:bold">NA</span>.new(x) }
+<span class="line-numbers"><a href="#n3" name="n3">3</a></span><span style="color:#777"># creates alignment object</span>
+<span class="line-numbers"><a href="#n4" name="n4">4</a></span>a = <span style="color:#036;font-weight:bold">Bio</span>::<span style="color:#036;font-weight:bold">Alignment</span>.new(seqs)
+<span class="line-numbers"><a href="#n5" name="n5">5</a></span>a.consensus 
+</pre></div>
+</div>
+</div>
+<p>  <pre><code>=&gt; a?gc?
+</code></pre>
+</p>
+
+<pre><code># shows IUPAC consensus
+p a.consensus_iupac       # ==&gt; "ahgcr"
+
+# iterates over each seq
+a.each { |x| p x }
+  # ==&gt;
+  #    "atgca"
+  #    "aagca"
+  #    "acgca"
+  #    "acgcg"
+# iterates over each site
+a.each_site { |x| p x }
+  # ==&gt;
+  #    ["a", "a", "a", "a"]
+  #    ["t", "a", "c", "c"]
+  #    ["g", "g", "g", "g"]
+  #    ["c", "c", "c", "c"]
+  #    ["a", "a", "a", "g"]
+
+# doing alignment by using CLUSTAL W.
+# clustalw command must be installed.
+factory = Bio::ClustalW.new
+a2 = a.do_align(factory)
+</code></pre>
+
+<p>Read a ClustalW or Muscle ‘ALN’ alignment file:</p>
+
+<p><code>ruby
+bioruby&gt; aln = Bio::ClustalW::Report.new(File.read('../test/data/clustalw/example1.aln'))
+bioruby&gt; aln.header
+==&gt; "CLUSTAL 2.0.9 multiple sequence alignment"
+</code></p>
+
+<p>Fetch a sequence:</p>
+
+<p><code>ruby
+bioruby&gt; seq = aln.get_sequence(1)
+bioruby&gt; seq.definition
+==&gt; "gi|115023|sp|P10425|"
+</code></p>
+
+<p>Get a partial sequence:</p>
+
+<p><code>
+bioruby&gt; seq.to_s[60..120]
+==&gt; "LGYFNG-EAVPSNGLVLNTSKGLVLVDSSWDNKLTKELIEMVEKKFQKRVTDVIITHAHAD"
+</code></p>
+
+<p>Show the full alignment residue match information for the sequences in the set:</p>
+
+<p><code>
+bioruby&gt; aln.match_line[60..120]
+==&gt; "     .     **. .   ..   ::*:       . * : : .        .: .* * *"
+</code></p>
+
+<p>Return a Bio::Alignment object:</p>
+
+<p><code>ruby
+bioruby&gt; aln.alignment.consensus[60..120]
+==&gt; "???????????SN?????????????D??????????L??????????????????H?H?D"
+</code></p>
+
+<h2 id="restriction-enzymes-biore">Restriction Enzymes (Bio::RE)</h2>
+
+<p>BioRuby has extensive support for restriction enzymes (REs). It contains a full library of commonly used REs (from REBASE) which can be used to cut single stranded RNA or double stranded DNA into fragments. To list all enzymes:</p>
+
+<p><code>ruby
+rebase = Bio::RestrictionEnzyme.rebase
+rebase.each do |enzyme_name, info|
+  p enzyme_name
+end
+</code></p>
+
+<p>and to cut a sequence with an enzyme follow up with:</p>
+
+<p>```ruby
+res = seq.cut_with_enzyme(‘EcoRII’, {:max_permutations =&gt; 0}, 
+  {:view_ranges =&gt; true})
+if res.kind_of? Symbol #error
+   err = Err.find_by_code(res.to_s)
+   unless err
+     err = Err.new(:code =&gt; res.to_s)
+   end
+end
+res.each do |frag|
+   em = EnzymeMatch.new</p>
+
+<p>em.p_left = frag.p_left
+   em.p_right = frag.p_right
+   em.c_left = frag.c_left
+   em.c_right = frag.c_right</p>
+
+<p>em.err = nil
+   em.enzyme = ar_enz
+   em.sequence = ar_seq
+   p em
+ end
+```</p>
+
+    </article>
+  </body>
+</html>
