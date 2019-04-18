@@ -6,7 +6,7 @@ install:
 
 script:
   - pwd && mkdir static
-  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -o ~/build/bioruby/documents/static/index.html
+  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial_intro.md -o ~/build/bioruby/documents/static/index.html
   
 deploy:
   provider: surge
