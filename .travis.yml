@@ -1,15 +1,12 @@
 language: ruby
 
 install:
-  - gem install rake
+  - gem install rubydown
   - gem install bio -v 1.6.0.pre.20181210
 
 script:
   - pwd && mkdir static
-  - cd ~ && ls
-  - git clone git://github.com/sciruby-jp/rubydown && cd rubydown && rake build && rake install
-  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -e ~/rubydown/exe/template.html.erb -o ~/build/bioruby/documents/static/index.html
-  - cd ~/build/bioruby/documents/ && ls -lh ./static
+  - cd ~/build/bioruby/documents/rubydown && rubydown -i Tutorial.intro.rbmd -o ~/build/bioruby/documents/static/index.html
   
 deploy:
   provider: surge
