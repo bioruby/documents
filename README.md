@@ -1,4 +1,5 @@
 #### Automated and Reproducible http://bioruby.surge.sh/ update with [rubydown](https://github.com/sciruby-jp/rubydown) + Travis
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/bioruby/documents/master)
 [![Build Status](https://travis-ci.org/bioruby/documents.svg?branch=master)](https://travis-ci.org/bioruby/documents)
 
 # rubydown installation
